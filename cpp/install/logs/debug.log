@@ -1,0 +1,124 @@
+[2026-05-08 10:04:02] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:04:02] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:04:02] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:04:02] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:142 - Main process starting...
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_ocr.sock
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started OCR process (PID: 10547)
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_fatigue.sock
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started Fatigue process (PID: 10548)
+[2026-05-08 10:04:31] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:247 - All processes started
+[2026-05-08 10:04:32] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:04:32] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:04:32] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:04:32] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:04:32] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - OCR process exited with status 1
+[2026-05-08 10:04:32] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - Fatigue process exited with status 1
+[2026-05-08 10:05:49] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:276 - Stopping all processes...
+[2026-05-08 10:05:49] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:05:49] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:05:49] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:281 - Main process exited
+[2026-05-08 10:05:52] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:05:52] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:05:52] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:05:52] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:05:54] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:05:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:05:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:05:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:142 - Main process starting...
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_ocr.sock
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started OCR process (PID: 10611)
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_fatigue.sock
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started Fatigue process (PID: 10612)
+[2026-05-08 10:06:05] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:247 - All processes started
+[2026-05-08 10:06:06] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:06:06] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:06:06] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:06:06] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - OCR process exited with status 1
+[2026-05-08 10:06:06] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - Fatigue process exited with status 1
+[2026-05-08 10:06:09] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:276 - Stopping all processes...
+[2026-05-08 10:06:09] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:06:09] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:06:09] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:281 - Main process exited
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:142 - Main process starting...
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_ocr.sock
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started OCR process (PID: 10617)
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_fatigue.sock
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started Fatigue process (PID: 10618)
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:247 - All processes started
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:06:12] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:06:12] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:06:12] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - OCR process exited with status 1
+[2026-05-08 10:06:12] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - Fatigue process exited with status 1
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:142 - Main process starting...
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_ocr.sock
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started OCR process (PID: 10819)
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_fatigue.sock
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started Fatigue process (PID: 10820)
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:247 - All processes started
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:06:50] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:06:50] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:06:50] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - OCR process exited with status 1
+[2026-05-08 10:06:50] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - Fatigue process exited with status 1
+[2026-05-08 10:06:51] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:276 - Stopping all processes...
+[2026-05-08 10:06:51] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:06:51] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:06:51] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:281 - Main process exited
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:142 - Main process starting...
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_ocr.sock
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started OCR process (PID: 11092)
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:62 - IPC server initialized on /tmp/integrated_inspection_fatigue.sock
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:69 - Started Fatigue process (PID: 11093)
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:247 - All processes started
+[2026-05-08 10:11:19] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:11:19] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:11:19] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:11:19] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:11:19] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - OCR process exited with status 1
+[2026-05-08 10:11:19] [WARN] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:260 - Fatigue process exited with status 1
+[2026-05-08 10:11:21] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:276 - Stopping all processes...
+[2026-05-08 10:11:21] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:11:21] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:11:21] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:281 - Main process exited
+[2026-05-08 10:12:16] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:12:16] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:12:16] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:12:16] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:12:38] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:276 - Stopping all processes...
+[2026-05-08 10:12:38] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:12:38] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc:129 - IPC manager shutdown
+[2026-05-08 10:12:38] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc:281 - Main process exited
+[2026-05-08 10:13:29] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:13:29] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:35 - OCR process starting...
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:233 - Failed to open dictionary file: ../model/ocr/dataset.txt
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc:33 - Failed to load dictionary
+[2026-05-08 10:13:29] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc:62 - Failed to init OCR engine
+[2026-05-08 10:13:54] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:13:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:13:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:13:54] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine
+[2026-05-08 10:13:57] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:35 - Fatigue process starting...
+[2026-05-08 10:13:57] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:151 - Failed to open labels file: ../model/fatigue/dataset.txt
+[2026-05-08 10:13:57] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc:30 - Failed to load labels
+[2026-05-08 10:13:57] [ERROR] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_fatigue.cc:59 - Failed to init fatigue engine

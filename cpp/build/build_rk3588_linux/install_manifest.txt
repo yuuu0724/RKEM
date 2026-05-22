@@ -1,0 +1,16 @@
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/lib/librga.so
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/lib/librknnrt.so
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./main_process
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./process_ocr
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./process_fatigue
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./process_defect
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./two_model_camera_demo
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/dataset.txt
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/PP-OCRv5_mobile_det.rknn
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/PP-OCRv5_mobile_rec.rknn
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/fatigue/dataset.txt
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/fatigue/fatigue_two_outputs_i8.rknn
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/defect/dataset.txt
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/defect/defect_best_i8.rknn
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/lib/librknnrt.so
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/lib/librga.so
