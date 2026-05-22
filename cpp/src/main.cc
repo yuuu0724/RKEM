@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <opencv2/opencv.hpp>
+#include <sys/wait.h>
 #include <unistd.h>
 
 static constexpr int kInputSize = 640;
@@ -30,6 +31,7 @@ static constexpr float kNmsThreshold = 0.45f;
 static constexpr float kDefectThreshold = 0.15f;
 static constexpr float kFatigueThreshold = 0.15f;
 static const char* kChipCameraDevice = "/dev/video21";
+static const char* kChipFramePath = "/tmp/integrated_inspection_video21.bgr";
 static constexpr uint64_t kOcrIntervalFrames = 3;
 
 static std::atomic<bool> g_running(true);
@@ -61,6 +63,14 @@ struct DetectionState {
     std::vector<Detection> detections;
 };
 
+struct RawFrameHeader {
+    char magic[8];
+    int width;
+    int height;
+    int type;
+    int bytes;
+};
+
 static FrameStore g_chip_frame;
 static FrameStore g_fatigue_frame;
 static std::mutex g_ocr_mutex;
@@ -73,6 +83,8 @@ static DetectionState g_fatigue_state;
 static void SignalHandler(int) {
     g_running.store(false);
 }
+
+static void DrawWindowTitle(cv::Mat& image, const std::string& title);
 
 static void ConfigureDisplayEnv() {
     if (!getenv("DISPLAY")) {
@@ -350,6 +362,8 @@ public:
             DecodeTwoOutputs(outputs, detections);
         } else if (!outputs.empty() && outputs[0].buf) {
             DecodeSingleOutput(outputs[0].buf, output_attrs_[0], detections);
+        } else {
+            std::fprintf(stderr, "[ERROR] %s has no valid output buffers\n", Label(0).c_str());
         }
         rknn_outputs_release(ctx_, outputs.size(), outputs.data());
         return true;
@@ -747,19 +761,6 @@ private:
 };
 
 static bool OpenCamera(cv::VideoCapture& cap, const std::string& device) {
-    if (device == kChipCameraDevice) {
-        cap.open(device, cv::CAP_V4L2);
-        if (!cap.isOpened()) {
-            return false;
-        }
-        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, kCaptureWidth);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, kCaptureHeight);
-        cap.set(cv::CAP_PROP_FPS, 30);
-        cap.set(cv::CAP_PROP_BUFFERSIZE, 1);
-        return true;
-    }
-
     for (int i = 0; i < 5 && g_running.load(); ++i) {
         int index = -1;
         if (device.rfind("/dev/video", 0) == 0) {
@@ -790,20 +791,189 @@ static bool OpenCamera(cv::VideoCapture& cap, const std::string& device) {
     return false;
 }
 
-static bool PrepareChipFrame(const std::string& device, const cv::Mat& frame,
-                             cv::Mat& gray640, cv::Mat& display640) {
+static std::string NormalizeVideoDevice(const std::string& device) {
+    if (device.rfind("/dev/video", 0) == 0) {
+        return device;
+    }
+    if (device.rfind("video", 0) == 0) {
+        return "/dev/" + device;
+    }
+    return device;
+}
+
+static cv::VideoCapture OpenCameraLikeDemo(const std::string& device, int width, int height) {
+    cv::VideoCapture cap;
+    const std::string normalized_device = NormalizeVideoDevice(device);
+
+    if (normalized_device.rfind("/dev/video", 0) == 0) {
+        cap.open(normalized_device, cv::CAP_V4L2);
+        if (!cap.isOpened()) {
+            const int id = std::stoi(normalized_device.substr(10));
+            cap.open(id, cv::CAP_V4L2);
+        }
+    } else {
+        cap.open(std::stoi(normalized_device), cv::CAP_V4L2);
+    }
+
+    if (cap.isOpened()) {
+        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+        cap.set(cv::CAP_PROP_FPS, 30);
+        cap.set(cv::CAP_PROP_BUFFERSIZE, 1);
+    }
+
+    return cap;
+}
+
+static pid_t StartCameraCaptureService(const std::string& device, const std::string& output) {
+    unlink(output.c_str());
+    std::string tmp_output = output + ".tmp";
+    unlink(tmp_output.c_str());
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        std::perror("fork camera_capture_service");
+        return -1;
+    }
+    if (pid == 0) {
+        execl("./camera_capture_service", "camera_capture_service",
+              "--camera", device.c_str(),
+              "--output", output.c_str(),
+              "--width", "640",
+              "--height", "480",
+              (char*)nullptr);
+        execlp("camera_capture_service", "camera_capture_service",
+               "--camera", device.c_str(),
+               "--output", output.c_str(),
+               "--width", "640",
+               "--height", "480",
+               (char*)nullptr);
+        std::perror("exec camera_capture_service");
+        _exit(127);
+    }
+    return pid;
+}
+
+static void StopCameraCaptureService(pid_t pid) {
+    if (pid <= 0) {
+        return;
+    }
+    kill(pid, SIGTERM);
+    for (int i = 0; i < 20; ++i) {
+        int status = 0;
+        pid_t ret = waitpid(pid, &status, WNOHANG);
+        if (ret == pid) {
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    kill(pid, SIGKILL);
+    waitpid(pid, nullptr, 0);
+}
+
+static bool ReadLatestChipFrame(cv::Mat& frame) {
+    std::ifstream in(kChipFramePath, std::ios::binary);
+    if (!in.is_open()) {
+        return false;
+    }
+
+    RawFrameHeader header;
+    if (!in.read(reinterpret_cast<char*>(&header), sizeof(header))) {
+        return false;
+    }
+    if (std::string(header.magic, header.magic + 7) != "IIFRM01" ||
+        header.width <= 0 || header.height <= 0 || header.bytes <= 0) {
+        return false;
+    }
+
+    cv::Mat image(header.height, header.width, header.type);
+    const size_t expected_bytes = image.total() * image.elemSize();
+    if (header.bytes != static_cast<int>(expected_bytes)) {
+        return false;
+    }
+    if (!in.read(reinterpret_cast<char*>(image.data), expected_bytes)) {
+        return false;
+    }
+
+    frame = image;
+    return true;
+}
+
+static int RunDisplayOnlyFromCaptureService(const std::string& device) {
+    pid_t capture_pid = StartCameraCaptureService(device, kChipFramePath);
+    if (capture_pid <= 0) {
+        return 1;
+    }
+
+    ConfigureDisplayEnv();
+    cv::namedWindow("video21 OCR", cv::WINDOW_NORMAL);
+    cv::namedWindow("video21 defect", cv::WINDOW_NORMAL);
+
+    bool printed_frame_info = false;
+    while (g_running.load()) {
+        cv::Mat frame;
+        if (!ReadLatestChipFrame(frame)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            continue;
+        }
+
+        if (!printed_frame_info) {
+            std::printf("[INFO] display-only first frame: %dx%d channels=%d type=%d\n",
+                        frame.cols, frame.rows, frame.channels(), frame.type());
+            printed_frame_info = true;
+        }
+
+        cv::imshow("video21 OCR", frame.clone());
+        cv::imshow("video21 defect", frame.clone());
+
+        int key = cv::waitKey(1);
+        if (key == 27 || key == 'q' || key == 'Q') {
+            break;
+        }
+    }
+
+    StopCameraCaptureService(capture_pid);
+    cv::destroyAllWindows();
+    return 0;
+}
+
+static bool DecodeJpegFrameIfNeeded(const cv::Mat& frame, cv::Mat& bgr) {
+    if (frame.empty() || frame.type() != CV_8UC1 || frame.total() < 4) {
+        return false;
+    }
+
+    const unsigned char* data = frame.ptr<unsigned char>(0);
+    bool looks_like_jpeg = data[0] == 0xff && data[1] == 0xd8;
+    if (!looks_like_jpeg && frame.rows > 1) {
+        return false;
+    }
+
+    cv::Mat encoded = frame.isContinuous() ? frame.reshape(1, 1) : frame.clone().reshape(1, 1);
+    cv::Mat decoded = cv::imdecode(encoded, cv::IMREAD_COLOR);
+    if (decoded.empty()) {
+        return false;
+    }
+
+    bgr = decoded;
+    return true;
+}
+
+static bool ConvertCameraFrameToBgr(const std::string& device, const cv::Mat& frame, cv::Mat& bgr) {
     if (frame.empty()) {
         return false;
     }
 
     try {
-        cv::Mat bgr;
         if (frame.channels() == 1) {
+            if (DecodeJpegFrameIfNeeded(frame, bgr)) {
+                return true;
+            }
             cv::cvtColor(frame, bgr, cv::COLOR_GRAY2BGR);
         } else if (frame.channels() == 2) {
             cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_YUY2);
         } else if (frame.channels() == 3) {
-            bgr = frame;
+            bgr = frame.clone();
         } else if (frame.channels() == 4) {
             cv::cvtColor(frame, bgr, cv::COLOR_BGRA2BGR);
         } else {
@@ -811,11 +981,30 @@ static bool PrepareChipFrame(const std::string& device, const cv::Mat& frame,
                          device.c_str(), frame.channels(), frame.type());
             return false;
         }
+    } catch (const cv::Exception& e) {
+        std::fprintf(stderr, "[ERROR] %s frame convert failed: %s\n", device.c_str(), e.what());
+        return false;
+    }
+
+    return true;
+}
+
+static bool PrepareChipFrame(const std::string& device, const cv::Mat& frame,
+                             cv::Mat& gray640, cv::Mat& display) {
+    if (frame.empty()) {
+        return false;
+    }
+
+    try {
+        cv::Mat bgr;
+        if (!ConvertCameraFrameToBgr(device, frame, bgr)) {
+            return false;
+        }
 
         cv::Mat gray;
         cv::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
         cv::resize(gray, gray640, cv::Size(kInputSize, kInputSize));
-        cv::resize(bgr, display640, cv::Size(kInputSize, kInputSize));
+        display = bgr.clone();
     } catch (const cv::Exception& e) {
         std::fprintf(stderr, "[ERROR] %s frame convert failed: %s\n", device.c_str(), e.what());
         return false;
@@ -860,17 +1049,7 @@ static void CaptureThread(const std::string& device, FrameStore* store) {
             }
 
             cv::Mat bgr;
-            if (frame.channels() == 1) {
-                cv::cvtColor(frame, bgr, cv::COLOR_GRAY2BGR);
-            } else if (frame.channels() == 2) {
-                cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_YUY2);
-            } else if (frame.channels() == 3) {
-                bgr = frame.clone();
-            } else if (frame.channels() == 4) {
-                cv::cvtColor(frame, bgr, cv::COLOR_BGRA2BGR);
-            } else {
-                std::fprintf(stderr, "[WARN] %s unsupported frame channels=%d type=%d\n",
-                             device.c_str(), frame.channels(), frame.type());
+            if (!ConvertCameraFrameToBgr(device, frame, bgr)) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 continue;
             }
@@ -1025,20 +1204,47 @@ static void OcrThread(ppocr_system_app_context* ctx, const std::string& expected
     }
 }
 
-static void YoloThread(FrameStore* frame_store, YoloDetector* detector,
+static void YoloThread(const std::string& name, FrameStore* frame_store, YoloDetector* detector,
                        std::mutex* state_mutex, DetectionState* state) {
     uint64_t last_seq = 0;
+    uint64_t seen_frames = 0;
+    uint64_t ok_count = 0;
+    uint64_t fail_count = 0;
+    size_t last_detection_count = 0;
+    auto last_log = std::chrono::steady_clock::now();
+
+    std::printf("[INFO] %s thread started\n", name.c_str());
+    std::fflush(stdout);
+
     while (g_running.load()) {
         cv::Mat gray;
         if (!CopyLatestFrame(*frame_store, last_seq, gray)) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
         }
+        seen_frames++;
         std::vector<Detection> detections;
         if (detector->Detect(gray, detections)) {
+            ok_count++;
+            last_detection_count = detections.size();
             std::lock_guard<std::mutex> lock(*state_mutex);
             state->ready = true;
             state->detections = detections;
+        } else {
+            fail_count++;
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        if (now - last_log >= std::chrono::seconds(2)) {
+            std::printf("[INFO] %s infer frames=%llu ok=%llu fail=%llu last_seq=%llu detections=%zu\n",
+                        name.c_str(),
+                        (unsigned long long)seen_frames,
+                        (unsigned long long)ok_count,
+                        (unsigned long long)fail_count,
+                        (unsigned long long)last_seq,
+                        last_detection_count);
+            std::fflush(stdout);
+            last_log = now;
         }
     }
 }
@@ -1055,13 +1261,15 @@ static void DrawOcr(cv::Mat& image, const OcrState& state) {
     cv::Scalar color = state.model_ok ? cv::Scalar(0, 255, 0) : cv::Scalar(0, 0, 255);
     cv::putText(image, state.model_ok ? "OCR OK" : "OCR NG", cv::Point(12, 32),
                 cv::FONT_HERSHEY_SIMPLEX, 0.9, color, 2);
+    const float scale_x = (float)image.cols / (float)kInputSize;
+    const float scale_y = (float)image.rows / (float)kInputSize;
     for (int i = 0; i < state.results.count; ++i) {
         const auto& box = state.results.text_result[i].box;
         std::vector<cv::Point> pts = {
-            {box.left_top.x, box.left_top.y},
-            {box.right_top.x, box.right_top.y},
-            {box.right_bottom.x, box.right_bottom.y},
-            {box.left_bottom.x, box.left_bottom.y}
+            {(int)std::round(box.left_top.x * scale_x), (int)std::round(box.left_top.y * scale_y)},
+            {(int)std::round(box.right_top.x * scale_x), (int)std::round(box.right_top.y * scale_y)},
+            {(int)std::round(box.right_bottom.x * scale_x), (int)std::round(box.right_bottom.y * scale_y)},
+            {(int)std::round(box.left_bottom.x * scale_x), (int)std::round(box.left_bottom.y * scale_y)}
         };
         cv::polylines(image, pts, true, cv::Scalar(255, 0, 0), 2);
     }
@@ -1073,12 +1281,24 @@ static void DrawOcr(cv::Mat& image, const OcrState& state) {
 
 static void DrawDetections(cv::Mat& image, const std::vector<Detection>& detections,
                            const YoloDetector& detector, const cv::Scalar& color) {
+    const float scale_x = (float)image.cols / (float)kInputSize;
+    const float scale_y = (float)image.rows / (float)kInputSize;
     for (const auto& det : detections) {
-        cv::rectangle(image, det.box, color, 2);
+        cv::Rect box(
+            (int)std::round(det.box.x * scale_x),
+            (int)std::round(det.box.y * scale_y),
+            (int)std::round(det.box.width * scale_x),
+            (int)std::round(det.box.height * scale_y));
+        box &= cv::Rect(0, 0, image.cols, image.rows);
+        if (box.empty()) {
+            continue;
+        }
+
+        cv::rectangle(image, box, color, 2);
         char text[128];
         std::snprintf(text, sizeof(text), "%s %.1f%%", detector.Label(det.cls_id).c_str(), det.score * 100.0f);
-        int y = std::max(20, det.box.y - 6);
-        cv::putText(image, text, cv::Point(det.box.x, y), cv::FONT_HERSHEY_SIMPLEX, 0.6, color, 2);
+        int y = std::max(20, box.y - 6);
+        cv::putText(image, text, cv::Point(box.x, y), cv::FONT_HERSHEY_SIMPLEX, 0.6, color, 2);
     }
 }
 
@@ -1099,8 +1319,10 @@ static void DrawDefect(cv::Mat& image, const DetectionState& state,
     const cv::Scalar color = state.detections.empty()
         ? cv::Scalar(0, 255, 0)
         : cv::Scalar(0, 0, 255);
-    cv::putText(image, state.detections.empty() ? "DEFECT OK" : "DEFECT NG",
-                cv::Point(12, 32), cv::FONT_HERSHEY_SIMPLEX, 0.9, color, 2);
+    std::string status = state.detections.empty()
+        ? "DEFECT OK detections=0"
+        : "DEFECT NG detections=" + std::to_string(state.detections.size());
+    cv::putText(image, status, cv::Point(12, 32), cv::FONT_HERSHEY_SIMPLEX, 0.8, color, 2);
     DrawDetections(image, state.detections, detector, color);
 }
 
@@ -1200,12 +1422,11 @@ static void PrintStatusEvery2s(const std::string& expected_model,
 int main(int argc, char** argv) {
     signal(SIGINT, SignalHandler);
     signal(SIGTERM, SignalHandler);
-    setenv("RKNN_LOG_LEVEL", "0", 0);
-    setenv("RGA_LOG_LEVEL", "3", 0);
 
     std::string chip_camera = kChipCameraDevice;
     std::string fatigue_camera = "/dev/video23";
     bool show_window = true;
+    bool display_only = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--chip-camera" && i + 1 < argc) {
@@ -1215,20 +1436,26 @@ int main(int argc, char** argv) {
             fatigue_camera = argv[++i];
         } else if (arg == "--no-window") {
             show_window = false;
+        } else if (arg == "--display-only") {
+            display_only = true;
         } else if (arg == "--help" || arg == "-h") {
-            std::cout << "Usage: ./main_process [--fatigue-camera /dev/video23] [--no-window]\n";
+            std::cout << "Usage: ./main_process [--fatigue-camera /dev/video23] [--no-window] [--display-only]\n";
             std::cout << "Chip OCR/defect camera is fixed to " << kChipCameraDevice << "\n";
             return 0;
         }
     }
 
-    std::cout << "请输入待检测芯片型号: ";
     std::string expected_model;
-    std::getline(std::cin, expected_model);
-    expected_model = NormalizeText(expected_model);
-    if (expected_model.empty()) {
-        std::cerr << "[ERROR] 型号不能为空\n";
-        return 1;
+    if (display_only) {
+        expected_model = "DISPLAY";
+    } else {
+        std::cout << "请输入待检测芯片型号: ";
+        std::getline(std::cin, expected_model);
+        expected_model = NormalizeText(expected_model);
+        if (expected_model.empty()) {
+            std::cerr << "[ERROR] 型号不能为空\n";
+            return 1;
+        }
     }
 
     std::cout << "[INFO] input image: 640x640 gray\n";
@@ -1237,57 +1464,76 @@ int main(int argc, char** argv) {
     std::cout << "[INFO] NPU core: OCR=core0, fatigue=core1, defect=core2\n";
     std::cout << "[INFO] video21 schedule: defect every frame, OCR every "
               << kOcrIntervalFrames << " frames\n";
+    if (display_only) {
+        std::cout << "[INFO] display-only mode: models disabled\n";
+        return RunDisplayOnlyFromCaptureService(chip_camera);
+    }
+
+    setenv("RKNN_LOG_LEVEL", "0", 0);
+    setenv("RGA_LOG_LEVEL", "3", 0);
 
     ppocr_system_app_context ocr_ctx;
     memset(&ocr_ctx, 0, sizeof(ocr_ctx));
-    if (init_ppocr_model("model/ocr/PP-OCRv5_mobile_det.rknn", &ocr_ctx.det_context) != 0 ||
-        init_ppocr_rec_model("model/ocr/PP-OCRv5_mobile_rec.rknn", &ocr_ctx.rec_context) != 0) {
-        std::cerr << "[ERROR] OCR init failed\n";
-        return 1;
+    if (!display_only) {
+        if (init_ppocr_model("model/ocr/PP-OCRv5_mobile_det.rknn", &ocr_ctx.det_context) != 0 ||
+            init_ppocr_rec_model("model/ocr/PP-OCRv5_mobile_rec.rknn", &ocr_ctx.rec_context) != 0) {
+            std::cerr << "[ERROR] OCR init failed\n";
+            return 1;
+        }
+        rknn_set_core_mask(ocr_ctx.det_context.rknn_ctx, (rknn_core_mask)RKNN_NPU_CORE_0);
+        rknn_set_core_mask(ocr_ctx.rec_context.rknn_ctx, (rknn_core_mask)RKNN_NPU_CORE_0);
     }
-    rknn_set_core_mask(ocr_ctx.det_context.rknn_ctx, (rknn_core_mask)RKNN_NPU_CORE_0);
-    rknn_set_core_mask(ocr_ctx.rec_context.rknn_ctx, (rknn_core_mask)RKNN_NPU_CORE_0);
 
     YoloDetector defect_detector;
-    if (!defect_detector.Init("model/defect/defect_best_i8.rknn", "model/defect/dataset.txt",
-                              2, kDefectThreshold, (rknn_core_mask)RKNN_NPU_CORE_2)) {
-        std::cerr << "[ERROR] defect init failed\n";
-        return 1;
+    if (!display_only) {
+        if (!defect_detector.Init("model/defect/defect_best_i8.rknn", "model/defect/dataset.txt",
+                                  2, kDefectThreshold, (rknn_core_mask)RKNN_NPU_CORE_2)) {
+            std::cerr << "[ERROR] defect init failed\n";
+            return 1;
+        }
     }
 
     YoloDetector fatigue_detector;
-    if (!fatigue_detector.Init("model/fatigue/fatigue_two_outputs_i8.rknn", "model/fatigue/dataset.txt",
-                               3, kFatigueThreshold, (rknn_core_mask)RKNN_NPU_CORE_1)) {
-        std::cerr << "[ERROR] fatigue init failed\n";
-        return 1;
+    if (!display_only) {
+        if (!fatigue_detector.Init("model/fatigue/fatigue_two_outputs_i8.rknn", "model/fatigue/dataset.txt",
+                                   3, kFatigueThreshold, (rknn_core_mask)RKNN_NPU_CORE_1)) {
+            std::cerr << "[ERROR] fatigue init failed\n";
+            return 1;
+        }
     }
 
-    cv::VideoCapture chip_cap;
-    if (!OpenCamera(chip_cap, chip_camera)) {
-        std::cerr << "[ERROR] failed to open chip camera " << chip_camera << "\n";
+    pid_t chip_capture_pid = StartCameraCaptureService(chip_camera, kChipFramePath);
+    if (chip_capture_pid <= 0) {
+        std::cerr << "[ERROR] failed to start camera_capture_service for " << chip_camera << "\n";
         release_ppocr_model(&ocr_ctx.det_context);
         release_ppocr_model(&ocr_ctx.rec_context);
         defect_detector.Release();
         fatigue_detector.Release();
         return 1;
     }
-    std::cout << "[INFO] chip camera opened once: " << chip_camera
-              << " actual=" << chip_cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x"
-              << chip_cap.get(cv::CAP_PROP_FRAME_HEIGHT)
-              << " fourcc=" << FourccToString(chip_cap.get(cv::CAP_PROP_FOURCC))
-              << " fps=" << chip_cap.get(cv::CAP_PROP_FPS) << "\n";
+    std::cout << "[INFO] chip camera capture service started: pid=" << chip_capture_pid
+              << " frame=" << kChipFramePath << "\n";
 
-    std::thread chip_ocr_worker(OcrThread, &ocr_ctx, expected_model);
-    std::thread chip_defect_worker(YoloThread, &g_chip_frame, &defect_detector,
-                                   &g_defect_mutex, &g_defect_state);
-    std::thread fatigue_capture(CaptureThread, fatigue_camera, &g_fatigue_frame);
-    std::thread fatigue_worker(YoloThread, &g_fatigue_frame, &fatigue_detector,
-                               &g_fatigue_mutex, &g_fatigue_state);
+    std::thread chip_ocr_worker;
+    std::thread chip_defect_worker;
+    if (!display_only) {
+        chip_ocr_worker = std::thread(OcrThread, &ocr_ctx, expected_model);
+        chip_defect_worker = std::thread(YoloThread, "defect", &g_chip_frame, &defect_detector,
+                                         &g_defect_mutex, &g_defect_state);
+    }
+    std::thread fatigue_capture;
+    if (!display_only) {
+        fatigue_capture = std::thread(CaptureThread, fatigue_camera, &g_fatigue_frame);
+    }
+    std::thread fatigue_worker;
+    if (!display_only) {
+        fatigue_worker = std::thread(YoloThread, "fatigue", &g_fatigue_frame, &fatigue_detector,
+                                     &g_fatigue_mutex, &g_fatigue_state);
+    }
 
     if (show_window) {
         try {
             ConfigureDisplayEnv();
-            cv::startWindowThread();
             cv::namedWindow("video21 OCR", cv::WINDOW_NORMAL);
             cv::namedWindow("video21 defect", cv::WINDOW_NORMAL);
             cv::namedWindow("video23 fatigue", cv::WINDOW_NORMAL);
@@ -1303,12 +1549,11 @@ int main(int argc, char** argv) {
 
     while (g_running.load()) {
         cv::Mat chip_frame;
-        chip_cap >> chip_frame;
-        if (chip_frame.empty()) {
+        if (!ReadLatestChipFrame(chip_frame)) {
             empty_chip_frame_count++;
             if (empty_chip_frame_count % 200 == 0) {
-                std::cerr << "[WARN] " << chip_camera
-                          << " read empty frame count=" << empty_chip_frame_count << "\n";
+                std::cerr << "[WARN] waiting for chip frame file count="
+                          << empty_chip_frame_count << " path=" << kChipFramePath << "\n";
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
@@ -1323,16 +1568,17 @@ int main(int argc, char** argv) {
             printed_chip_frame_info = true;
         }
 
+        cv::Mat chip_display = chip_frame.clone();
         cv::Mat chip_gray;
-        cv::Mat chip_display;
-        if (!PrepareChipFrame(chip_camera, chip_frame, chip_gray, chip_display)) {
+        cv::Mat unused_display;
+        if (!display_only && !PrepareChipFrame(chip_camera, chip_frame, chip_gray, unused_display)) {
             continue;
         }
 
-        {
+        if (!display_only) {
             std::lock_guard<std::mutex> lock(g_chip_frame.mutex);
             g_chip_frame.gray640 = chip_gray.clone();
-            g_chip_frame.display = chip_display.clone();
+            g_chip_frame.display = unused_display.clone();
             g_chip_frame.seq++;
             g_chip_frame.ready = true;
         }
@@ -1366,8 +1612,13 @@ int main(int argc, char** argv) {
 
         cv::Mat chip_ocr_display = chip_display.clone();
         cv::Mat chip_defect_display = chip_display.clone();
-        DrawOcr(chip_ocr_display, ocr);
-        DrawDefect(chip_defect_display, defect, defect_detector);
+        if (display_only) {
+            DrawWindowTitle(chip_ocr_display, "video21 OCR display-only");
+            DrawWindowTitle(chip_defect_display, "video21 defect display-only");
+        } else {
+            DrawOcr(chip_ocr_display, ocr);
+            DrawDefect(chip_defect_display, defect, defect_detector);
+        }
         if (show_window) {
             try {
                 cv::imshow("video21 OCR", chip_ocr_display);
@@ -1377,7 +1628,9 @@ int main(int argc, char** argv) {
                 show_window = false;
             }
         }
-        DrawDetections(fatigue_display, fatigue.detections, fatigue_detector, cv::Scalar(0, 255, 255));
+        if (!display_only) {
+            DrawDetections(fatigue_display, fatigue.detections, fatigue_detector, cv::Scalar(0, 255, 255));
+        }
         DrawWindowTitle(fatigue_display, "video23 fatigue");
         if (show_window) {
             try {
@@ -1396,7 +1649,9 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
 
-        PrintStatusEvery2s(expected_model, defect_detector, fatigue_detector);
+        if (!display_only) {
+            PrintStatusEvery2s(expected_model, defect_detector, fatigue_detector);
+        }
     }
 
     if (chip_ocr_worker.joinable()) chip_ocr_worker.join();
@@ -1404,10 +1659,13 @@ int main(int argc, char** argv) {
     if (fatigue_capture.joinable()) fatigue_capture.join();
     if (fatigue_worker.joinable()) fatigue_worker.join();
 
-    release_ppocr_model(&ocr_ctx.det_context);
-    release_ppocr_model(&ocr_ctx.rec_context);
-    defect_detector.Release();
-    fatigue_detector.Release();
+    StopCameraCaptureService(chip_capture_pid);
+    if (!display_only) {
+        release_ppocr_model(&ocr_ctx.det_context);
+        release_ppocr_model(&ocr_ctx.rec_context);
+        defect_detector.Release();
+        fatigue_detector.Release();
+    }
     if (show_window) {
         cv::destroyAllWindows();
     }

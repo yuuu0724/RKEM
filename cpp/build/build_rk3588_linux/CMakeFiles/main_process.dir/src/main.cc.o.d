@@ -418,4 +418,5 @@ CMakeFiles/main_process.dir/src/main.cc.o: \
  /usr/include/aarch64-linux-gnu/c++/11/bits/c++io.h \
  /usr/include/c++/11/bits/fstream.tcc /usr/include/c++/11/thread \
  /usr/include/c++/11/bits/std_thread.h \
- /usr/include/c++/11/bits/this_thread_sleep.h
+ /usr/include/c++/11/bits/this_thread_sleep.h \
+ /usr/include/aarch64-linux-gnu/sys/wait.h

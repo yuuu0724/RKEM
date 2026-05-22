@@ -485,7 +485,8 @@ CMakeFiles/main_process.dir/src/main.cc.o: ../../src/main.cc \
   /usr/include/c++/11/bits/fstream.tcc \
   /usr/include/c++/11/thread \
   /usr/include/c++/11/bits/std_thread.h \
-  /usr/include/c++/11/bits/this_thread_sleep.h
+  /usr/include/c++/11/bits/this_thread_sleep.h \
+  /usr/include/aarch64-linux-gnu/sys/wait.h
 
 CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o: /userdata/sdcard/workspace/proj/chip/cpp/clipper.cc \
   /usr/include/stdc-predef.h \
@@ -2496,6 +2497,8 @@ CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocr
 /usr/include/opencv4/opencv2/core/persistence.hpp:
 
 /usr/include/c++/11/bits/enable_special_members.h:
+
+/usr/include/aarch64-linux-gnu/sys/wait.h:
 
 /usr/include/c++/11/bits/unordered_map.h:
 

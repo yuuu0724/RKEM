@@ -5,6 +5,7 @@
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./process_fatigue
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./process_defect
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./two_model_camera_demo
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/./camera_capture_service
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/dataset.txt
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/PP-OCRv5_mobile_det.rknn
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/ocr/PP-OCRv5_mobile_rec.rknn

@@ -181,12 +181,21 @@ target_link_libraries(two_model_camera_demo
     ${OpenCV_LIBS}
 )
 
+# 纯 OpenCV 摄像头采集服务，隔离模型库对 V4L2 的影响
+add_executable(camera_capture_service
+    src/camera_capture_service.cc
+)
+
+target_link_libraries(camera_capture_service
+    ${OpenCV_LIBS}
+)
+
 # ============================================================
 # 安装规则
 # ============================================================
 
 # 安装可执行文件
-install(TARGETS main_process process_ocr process_fatigue process_defect two_model_camera_demo DESTINATION .)
+install(TARGETS main_process process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service DESTINATION .)
 
 # 安装模型文件
 install(FILES

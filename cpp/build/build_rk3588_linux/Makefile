@@ -227,6 +227,19 @@ two_model_camera_demo/fast:
 .PHONY : two_model_camera_demo/fast
 
 #=============================================================================
+# Target rules for targets named camera_capture_service
+
+# Build rule for target.
+camera_capture_service: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 camera_capture_service
+.PHONY : camera_capture_service
+
+# fast build rule for target.
+camera_capture_service/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/build
+.PHONY : camera_capture_service/fast
+
+#=============================================================================
 # Target rules for targets named fileutils
 
 # Build rule for target.
@@ -307,6 +320,30 @@ src/camera.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/camera.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/camera.cc.s
 .PHONY : src/camera.cc.s
+
+src/camera_capture_service.o: src/camera_capture_service.cc.o
+.PHONY : src/camera_capture_service.o
+
+# target to build an object file
+src/camera_capture_service.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o
+.PHONY : src/camera_capture_service.cc.o
+
+src/camera_capture_service.i: src/camera_capture_service.cc.i
+.PHONY : src/camera_capture_service.i
+
+# target to preprocess a source file
+src/camera_capture_service.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.i
+.PHONY : src/camera_capture_service.cc.i
+
+src/camera_capture_service.s: src/camera_capture_service.cc.s
+.PHONY : src/camera_capture_service.s
+
+# target to generate assembly for a file
+src/camera_capture_service.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.s
+.PHONY : src/camera_capture_service.cc.s
 
 src/defect_engine.o: src/defect_engine.cc.o
 .PHONY : src/defect_engine.o
@@ -765,6 +802,7 @@ help:
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
 	@echo "... audioutils"
+	@echo "... camera_capture_service"
 	@echo "... fileutils"
 	@echo "... imagedrawing"
 	@echo "... imageutils"
@@ -776,6 +814,9 @@ help:
 	@echo "... src/camera.o"
 	@echo "... src/camera.i"
 	@echo "... src/camera.s"
+	@echo "... src/camera_capture_service.o"
+	@echo "... src/camera_capture_service.i"
+	@echo "... src/camera_capture_service.s"
 	@echo "... src/defect_engine.o"
 	@echo "... src/defect_engine.i"
 	@echo "... src/defect_engine.s"

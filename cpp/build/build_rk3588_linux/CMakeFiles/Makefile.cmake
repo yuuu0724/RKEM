@@ -58,6 +58,7 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/process_fatigue.dir/DependInfo.cmake"
   "CMakeFiles/process_defect.dir/DependInfo.cmake"
   "CMakeFiles/two_model_camera_demo.dir/DependInfo.cmake"
+  "CMakeFiles/camera_capture_service.dir/DependInfo.cmake"
   "chip_utils.out/CMakeFiles/fileutils.dir/DependInfo.cmake"
   "chip_utils.out/CMakeFiles/imagedrawing.dir/DependInfo.cmake"
   "chip_utils.out/CMakeFiles/imageutils.dir/DependInfo.cmake"

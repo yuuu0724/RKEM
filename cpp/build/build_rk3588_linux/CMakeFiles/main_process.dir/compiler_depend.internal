@@ -487,6 +487,7 @@ CMakeFiles/main_process.dir/src/main.cc.o
  /usr/include/c++/11/thread
  /usr/include/c++/11/bits/std_thread.h
  /usr/include/c++/11/bits/this_thread_sleep.h
+ /usr/include/aarch64-linux-gnu/sys/wait.h
 
 CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
  /userdata/sdcard/workspace/proj/chip/cpp/clipper.cc
