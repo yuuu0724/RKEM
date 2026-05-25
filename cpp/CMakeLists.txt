@@ -1,9 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
 project(integrated_inspection)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+option(BUILD_QT_HMI "Build Qt Widgets HMI" ON)
 
 # Address Sanitizer 支持
 if (ENABLE_ASAN)
@@ -15,6 +18,15 @@ endif()
 
 # 从系统查找 OpenCV
 find_package(OpenCV REQUIRED)
+
+if (BUILD_QT_HMI)
+    # Qt Widgets HMI，兼容 Qt 5 / Qt 6，不使用 QML
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(CMAKE_AUTORCC ON)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+endif()
 
 # 复用 chip 工程里的 PP-OCRv5 后处理和图像工具
 set(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../chip CACHE PATH "chip demo root")
@@ -190,12 +202,35 @@ target_link_libraries(camera_capture_service
     ${OpenCV_LIBS}
 )
 
+if (BUILD_QT_HMI)
+    # 工业视觉检测 HMI，仅展示和交互，真实数据通过 MainWindow 接口注入
+    add_executable(integrated_inspection_hmi
+        src/hmi_main.cc
+        src/hmi_mainwindow.cc
+        include/hmi_mainwindow.h
+    )
+
+    target_link_libraries(integrated_inspection_hmi
+        Qt${QT_VERSION_MAJOR}::Widgets
+        ${OpenCV_LIBS}
+    )
+
+    target_include_directories(integrated_inspection_hmi PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${OpenCV_INCLUDE_DIRS}
+    )
+endif()
+
 # ============================================================
 # 安装规则
 # ============================================================
 
 # 安装可执行文件
-install(TARGETS main_process process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service DESTINATION .)
+set(INSTALL_TARGETS main_process process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service)
+if (BUILD_QT_HMI)
+    list(APPEND INSTALL_TARGETS integrated_inspection_hmi)
+endif()
+install(TARGETS ${INSTALL_TARGETS} DESTINATION .)
 
 # 安装模型文件
 install(FILES
