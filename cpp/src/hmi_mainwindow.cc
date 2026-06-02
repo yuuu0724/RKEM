@@ -1,4 +1,5 @@
 #include "hmi_mainwindow.h"
+#include "yolo_detector.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -12,6 +13,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QLocale>
+#include <QMetaObject>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPushButton>
@@ -19,12 +21,22 @@
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTimer>
+#include <QTime>
 #include <QVBoxLayout>
 
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/videoio.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <csignal>
+#include <cstdio>
+#include <fstream>
+#include <mutex>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace {
 constexpr const char *kBg = "#071019";
@@ -38,16 +50,155 @@ constexpr const char *kBad = "#EF4444";
 constexpr const char *kWarn = "#F7B500";
 constexpr const char *kBlue = "#1E9BFF";
 constexpr const char *kCyan = "#22D3FF";
+constexpr int kDetectionInputSize = 640;
+constexpr float kYoloThreshold = 0.15f;
+constexpr double kCenterVisionMin = 0.2;
+constexpr double kCenterVisionMax = 0.8;
+std::mutex g_detectorInitMutex;
+
+struct RawFrameHeader {
+    char magic[8];
+    int width;
+    int height;
+    int type;
+    int bytes;
+};
 
 QString metricText(int value)
 {
     return QLocale(QLocale::Chinese).toString(value);
 }
+
+bool decodeJpegFrameIfNeeded(const cv::Mat &frame, cv::Mat &bgr)
+{
+    if (frame.empty() || frame.type() != CV_8UC1 || frame.total() < 4) {
+        return false;
+    }
+
+    const unsigned char *data = frame.ptr<unsigned char>(0);
+    const bool looksLikeJpeg = data[0] == 0xff && data[1] == 0xd8;
+    if (!looksLikeJpeg && frame.rows > 1) {
+        return false;
+    }
+
+    cv::Mat encoded = frame.isContinuous() ? frame.reshape(1, 1) : frame.clone().reshape(1, 1);
+    cv::Mat decoded = cv::imdecode(encoded, cv::IMREAD_COLOR);
+    if (decoded.empty()) {
+        return false;
+    }
+
+    bgr = decoded;
+    return true;
+}
+
+bool convertCameraFrameToRgb(const cv::Mat &frame, cv::Mat &rgb)
+{
+    if (frame.empty()) {
+        return false;
+    }
+
+    cv::Mat bgr;
+    if (frame.channels() == 1) {
+        if (!decodeJpegFrameIfNeeded(frame, bgr)) {
+            cv::cvtColor(frame, bgr, cv::COLOR_GRAY2BGR);
+        }
+    } else if (frame.channels() == 2) {
+        cv::cvtColor(frame, bgr, cv::COLOR_YUV2BGR_YUY2);
+    } else if (frame.channels() == 3) {
+        bgr = frame;
+    } else if (frame.channels() == 4) {
+        cv::cvtColor(frame, bgr, cv::COLOR_BGRA2BGR);
+    } else {
+        return false;
+    }
+
+    cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
+    return true;
+}
+
+pid_t startCameraCaptureService(const QString &devicePath, const QString &outputPath)
+{
+    unlink(outputPath.toLocal8Bit().constData());
+    const QString tmpOutputPath = outputPath + QStringLiteral(".tmp");
+    unlink(tmpOutputPath.toLocal8Bit().constData());
+
+    const QByteArray device = devicePath.toLocal8Bit();
+    const QByteArray output = outputPath.toLocal8Bit();
+    pid_t pid = fork();
+    if (pid < 0) {
+        std::perror("fork camera_capture_service");
+        return -1;
+    }
+    if (pid == 0) {
+        execl("./camera_capture_service", "camera_capture_service",
+              "--camera", device.constData(),
+              "--output", output.constData(),
+              "--width", "640",
+              "--height", "480",
+              static_cast<char *>(nullptr));
+        execlp("camera_capture_service", "camera_capture_service",
+               "--camera", device.constData(),
+               "--output", output.constData(),
+               "--width", "640",
+               "--height", "480",
+               static_cast<char *>(nullptr));
+        std::perror("exec camera_capture_service");
+        _exit(127);
+    }
+    return pid;
+}
+
+void stopCameraCaptureService(int pid)
+{
+    if (pid <= 0) {
+        return;
+    }
+    kill(pid, SIGTERM);
+    for (int i = 0; i < 20; ++i) {
+        int status = 0;
+        const pid_t ret = waitpid(pid, &status, WNOHANG);
+        if (ret == pid) {
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    kill(pid, SIGKILL);
+    waitpid(pid, nullptr, 0);
+}
+
+bool readCaptureServiceFrame(const QString &framePath, cv::Mat &frame)
+{
+    std::ifstream in(framePath.toLocal8Bit().constData(), std::ios::binary);
+    if (!in.is_open()) {
+        return false;
+    }
+
+    RawFrameHeader header;
+    if (!in.read(reinterpret_cast<char *>(&header), sizeof(header))) {
+        return false;
+    }
+    if (std::string(header.magic, header.magic + 7) != "IIFRM01" ||
+        header.width <= 0 || header.height <= 0 || header.bytes <= 0) {
+        return false;
+    }
+
+    cv::Mat image(header.height, header.width, header.type);
+    const size_t expectedBytes = image.total() * image.elemSize();
+    if (header.bytes != static_cast<int>(expectedBytes)) {
+        return false;
+    }
+    if (!in.read(reinterpret_cast<char *>(image.data), expectedBytes)) {
+        return false;
+    }
+
+    frame = image;
+    return true;
+}
 }
 
 CameraPreviewWidget::CameraPreviewWidget(const QString &cameraName,
                                          const QString &devicePath,
-                                         bool fatigueOverlay,
+                                         DetectionMode detectionMode,
                                          QWidget *parent)
     : QWidget(parent),
       m_cameraName(cameraName),
@@ -56,23 +207,43 @@ CameraPreviewWidget::CameraPreviewWidget(const QString &cameraName,
       m_fatigueText(QStringLiteral("疲劳状态：等待数据")),
       m_frameTimer(new QTimer(this)),
       m_capture(nullptr),
+      m_captureFramePath(QStringLiteral("/tmp/integrated_inspection_hmi_%1.bgr").arg(devicePath.section('/', -1))),
       m_online(false),
-      m_fatigueOverlay(fatigueOverlay)
+      m_fatigueOverlay(detectionMode == DetectionMode::Fatigue),
+      m_detectionMode(detectionMode),
+      m_detectionRunning(false)
 {
     setMinimumHeight(118);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     connect(m_frameTimer, &QTimer::timeout, this, &CameraPreviewWidget::readFrame);
     startCamera();
+    startDetection();
 }
 
 CameraPreviewWidget::~CameraPreviewWidget()
 {
+    stopDetection();
     stopCamera();
 }
 
 bool CameraPreviewWidget::startCamera(int width, int height)
 {
     stopCamera();
+
+    if (m_devicePath == QStringLiteral("/dev/video21")) {
+        m_captureServicePid = startCameraCaptureService(m_devicePath, m_captureFramePath);
+        if (m_captureServicePid <= 0) {
+            m_online = false;
+            m_message = QStringLiteral("摄像头采集服务启动失败：%1").arg(m_devicePath);
+            update();
+            return false;
+        }
+        m_online = true;
+        m_message = QStringLiteral("实时画面：%1").arg(m_devicePath);
+        m_frameTimer->start(33);
+        readFrame();
+        return true;
+    }
 
     cv::VideoCapture *capture = new cv::VideoCapture;
     const bool opened = capture->open(m_devicePath.toStdString(), cv::CAP_V4L2);
@@ -108,6 +279,11 @@ void CameraPreviewWidget::stopCamera()
         m_frameTimer->stop();
     }
 
+    if (m_captureServicePid > 0) {
+        stopCameraCaptureService(m_captureServicePid);
+        m_captureServicePid = -1;
+    }
+
     cv::VideoCapture *capture = static_cast<cv::VideoCapture *>(m_capture);
     if (capture) {
         if (capture->isOpened()) {
@@ -122,6 +298,14 @@ void CameraPreviewWidget::stopCamera()
 void CameraPreviewWidget::setFrame(const QImage &frame)
 {
     m_frame = frame.convertToFormat(QImage::Format_RGB888);
+    if (!m_frame.isNull()) {
+        cv::Mat rgb(m_frame.height(),
+                    m_frame.width(),
+                    CV_8UC3,
+                    const_cast<uchar *>(m_frame.constBits()),
+                    static_cast<size_t>(m_frame.bytesPerLine()));
+        updateInferenceFrame(rgb);
+    }
     m_online = !m_frame.isNull();
     if (m_online) {
         m_message = QStringLiteral("实时画面：%1").arg(m_devicePath);
@@ -146,35 +330,44 @@ void CameraPreviewWidget::setMessage(const QString &message)
 
 void CameraPreviewWidget::setFatigueText(const QString &text)
 {
-    m_fatigueText = text.isEmpty() ? QStringLiteral("疲劳状态：等待数据") : text;
+    std::lock_guard<std::mutex> lock(m_fatigueMutex);
+    m_fatigueText = text.isEmpty() ? QStringLiteral("状态：清醒") : text;
     update();
 }
 
 void CameraPreviewWidget::readFrame()
 {
-    cv::VideoCapture *capture = static_cast<cv::VideoCapture *>(m_capture);
-    if (!capture || !capture->isOpened()) {
-        m_online = false;
-        m_message = QStringLiteral("摄像头未连接：%1").arg(m_devicePath);
-        update();
-        return;
-    }
-
     cv::Mat frame;
-    if (!capture->read(frame) || frame.empty()) {
-        m_online = false;
-        m_message = QStringLiteral("摄像头读取失败：%1").arg(m_devicePath);
-        update();
-        return;
+    if (m_captureServicePid > 0) {
+        if (!readCaptureServiceFrame(m_captureFramePath, frame) || frame.empty()) {
+            m_online = false;
+            m_message = QStringLiteral("等待摄像头采集服务：%1").arg(m_devicePath);
+            update();
+            return;
+        }
+    } else {
+        cv::VideoCapture *capture = static_cast<cv::VideoCapture *>(m_capture);
+        if (!capture || !capture->isOpened()) {
+            m_online = false;
+            m_message = QStringLiteral("摄像头未连接：%1").arg(m_devicePath);
+            update();
+            return;
+        }
+
+        if (!capture->read(frame) || frame.empty()) {
+            m_online = false;
+            m_message = QStringLiteral("摄像头读取失败：%1").arg(m_devicePath);
+            update();
+            return;
+        }
     }
 
     cv::Mat rgb;
-    if (frame.channels() == 1) {
-        cv::cvtColor(frame, rgb, cv::COLOR_GRAY2RGB);
-    } else if (frame.channels() == 4) {
-        cv::cvtColor(frame, rgb, cv::COLOR_BGRA2RGB);
-    } else {
-        cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
+    if (!convertCameraFrameToRgb(frame, rgb)) {
+        m_online = false;
+        m_message = QStringLiteral("摄像头格式转换失败：%1").arg(m_devicePath);
+        update();
+        return;
     }
 
     m_frame = QImage(rgb.data,
@@ -182,6 +375,7 @@ void CameraPreviewWidget::readFrame()
                      rgb.rows,
                      static_cast<int>(rgb.step),
                      QImage::Format_RGB888).copy();
+    updateInferenceFrame(rgb);
     m_online = true;
     m_message = QStringLiteral("实时画面：%1").arg(m_devicePath);
     update();
@@ -211,7 +405,9 @@ void CameraPreviewWidget::paintEvent(QPaintEvent *event)
     painter.fillRect(area, QColor(kBg));
 
     if (!m_frame.isNull()) {
-        painter.drawImage(imageRect(area, m_frame.size()), m_frame);
+        const QRect imageArea = imageRect(area, m_frame.size());
+        painter.drawImage(imageArea, m_frame);
+        drawDetectionOverlay(painter, imageArea);
     } else {
         drawPlaceholder(painter, area);
     }
@@ -262,30 +458,416 @@ void CameraPreviewWidget::drawPlaceholder(QPainter &painter, const QRect &area)
 
 void CameraPreviewWidget::drawFatigueOverlay(QPainter &painter, const QRect &area)
 {
-    const QRect panel(area.left() + 10, area.bottom() - 40, area.width() - 20, 28);
+    QString fatigueText;
+    FatigueLevel fatigueLevel = FatigueLevel::Awake;
+    int fatigueScore = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_fatigueMutex);
+        fatigueText = m_fatigueText;
+        fatigueLevel = m_fatigueLevel;
+        fatigueScore = m_fatigueScore;
+    }
+    if (fatigueText.isEmpty()) {
+        fatigueText = QStringLiteral("状态：清醒");
+    }
+
+    const bool severeBlinkOn = fatigueLevel == FatigueLevel::Severe &&
+        (QDateTime::currentMSecsSinceEpoch() / 350) % 2 == 0;
+    const QColor statusColor = fatigueLevel == FatigueLevel::Severe
+        ? (severeBlinkOn ? QColor("#FF2D2D") : QColor(kBad))
+        : (fatigueLevel == FatigueLevel::Fatigue ? QColor(kWarn) : QColor(kGood));
+    const QColor panelColor = fatigueLevel == FatigueLevel::Severe
+        ? (severeBlinkOn ? QColor(96, 8, 14, 245) : QColor(32, 4, 8, 230))
+        : QColor(7, 16, 25, 220);
+
+    const QRect panel(area.left() + 10, area.bottom() - 42, area.width() - 20, 30);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(7, 16, 25, 220));
+    painter.setBrush(panelColor);
     painter.drawRoundedRect(panel, 5, 5);
+    if (fatigueLevel == FatigueLevel::Severe) {
+        painter.setPen(QPen(statusColor, 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(panel.adjusted(1, 1, -1, -1), 5, 5);
+    }
 
     const QRect bar(panel.left() + 10, panel.top() + 7, panel.width() - 20, 8);
-    QRect green = bar;
-    green.setWidth(bar.width() * 45 / 100);
-    QRect yellow(bar.left() + green.width(), bar.top(), bar.width() * 25 / 100, bar.height());
-    QRect dark(yellow.right(), bar.top(), bar.right() - yellow.right(), bar.height());
+    QRect active = bar;
+    const int percent = fatigueLevel == FatigueLevel::Severe
+        ? 100
+        : (fatigueLevel == FatigueLevel::Fatigue ? std::min(90, 50 + fatigueScore * 15) : 30);
+    active.setWidth(bar.width() * percent / 100);
+    QRect inactive(active.right(), bar.top(), std::max(0, bar.right() - active.right()), bar.height());
 
-    painter.setBrush(QColor(kGood));
-    painter.drawRoundedRect(green, 4, 4);
-    painter.setBrush(QColor(kWarn));
-    painter.drawRect(yellow);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(statusColor);
+    painter.drawRoundedRect(active, 4, 4);
     painter.setBrush(QColor("#243241"));
-    painter.drawRoundedRect(dark, 4, 4);
+    painter.drawRoundedRect(inactive, 4, 4);
 
     QFont font = painter.font();
     font.setPixelSize(std::max(8, height() / 18));
-    font.setBold(false);
+    font.setBold(fatigueLevel != FatigueLevel::Awake);
     painter.setFont(font);
-    painter.setPen(QColor(kSubText));
-    painter.drawText(panel.adjusted(10, 13, -10, 0), Qt::AlignCenter, m_fatigueText);
+    painter.setPen(fatigueLevel == FatigueLevel::Awake ? QColor(kSubText) : statusColor);
+    painter.drawText(panel.adjusted(10, 13, -10, 0), Qt::AlignCenter, fatigueText);
+}
+
+void CameraPreviewWidget::drawDetectionOverlay(QPainter &painter, const QRect &imageArea)
+{
+    QVector<DetectionOverlay> overlays;
+    bool ready = false;
+    {
+        std::lock_guard<std::mutex> lock(m_overlayMutex);
+        overlays = m_detectionOverlays;
+        ready = m_detectionReady;
+    }
+
+    if (m_detectionMode == DetectionMode::None || !ready) {
+        return;
+    }
+
+    const QColor boxColor = m_detectionMode == DetectionMode::Defect ? QColor(kBad) : QColor(kWarn);
+    painter.save();
+    painter.setClipRect(imageArea);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    QFont font = painter.font();
+    font.setPixelSize(std::max(9, height() / 17));
+    font.setBold(true);
+    painter.setFont(font);
+
+    for (const DetectionOverlay &overlay : overlays) {
+        QRectF box(imageArea.left() + overlay.modelBox.left() * imageArea.width() / kDetectionInputSize,
+                   imageArea.top() + overlay.modelBox.top() * imageArea.height() / kDetectionInputSize,
+                   overlay.modelBox.width() * imageArea.width() / kDetectionInputSize,
+                   overlay.modelBox.height() * imageArea.height() / kDetectionInputSize);
+        box = box.intersected(QRectF(imageArea));
+        if (box.width() < 2.0 || box.height() < 2.0) {
+            continue;
+        }
+
+        painter.setPen(QPen(boxColor, 2));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(box);
+
+        const QString text = QStringLiteral("%1 %2%")
+            .arg(overlay.label)
+            .arg(overlay.score * 100.0f, 0, 'f', 1);
+        const QRect textBounds = painter.fontMetrics().boundingRect(text).adjusted(-5, -3, 5, 3);
+        QRectF labelRect(box.left(), box.top() - textBounds.height() - 2,
+                         std::min<double>(textBounds.width(), imageArea.width()),
+                         textBounds.height());
+        if (labelRect.top() < imageArea.top()) {
+            labelRect.moveTop(box.top() + 2);
+        }
+        if (labelRect.right() > imageArea.right()) {
+            labelRect.moveRight(imageArea.right());
+        }
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(boxColor.red(), boxColor.green(), boxColor.blue(), 220));
+        painter.drawRoundedRect(labelRect, 3, 3);
+        painter.setPen(QColor("#071019"));
+        painter.drawText(labelRect.adjusted(5, 0, -5, 0), Qt::AlignVCenter | Qt::AlignLeft, text);
+    }
+
+    painter.restore();
+}
+
+void CameraPreviewWidget::updateInferenceFrame(const cv::Mat &rgb)
+{
+    if (m_detectionMode == DetectionMode::None || rgb.empty()) {
+        return;
+    }
+
+    cv::Mat gray;
+    cv::cvtColor(rgb, gray, cv::COLOR_RGB2GRAY);
+    cv::resize(gray, gray, cv::Size(kDetectionInputSize, kDetectionInputSize));
+
+    std::lock_guard<std::mutex> lock(m_inferenceMutex);
+    m_inferenceGray = gray.clone();
+    ++m_inferenceSeq;
+}
+
+bool CameraPreviewWidget::isCenterVisionDetection(const QRectF &modelBox) const
+{
+    const double centerX = (modelBox.left() + modelBox.right()) / 2.0 / kDetectionInputSize;
+    const double centerY = (modelBox.top() + modelBox.bottom()) / 2.0 / kDetectionInputSize;
+    return centerX >= kCenterVisionMin && centerX <= kCenterVisionMax &&
+        centerY >= kCenterVisionMin && centerY <= kCenterVisionMax;
+}
+
+bool CameraPreviewWidget::hasDetectionLabel(const QVector<DetectionOverlay> &overlays,
+                                            const QString &label) const
+{
+    for (const DetectionOverlay &overlay : overlays) {
+        if (overlay.label == label && isCenterVisionDetection(overlay.modelBox)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QString CameraPreviewWidget::fatigueLevelText(FatigueLevel level) const
+{
+    if (level == FatigueLevel::Severe) {
+        return QStringLiteral("严重疲劳");
+    }
+    if (level == FatigueLevel::Fatigue) {
+        return QStringLiteral("疲劳");
+    }
+    return QStringLiteral("清醒");
+}
+
+void CameraPreviewWidget::setFatigueDecision(FatigueLevel level,
+                                             const QString &triggerText,
+                                             int fatigueScore)
+{
+    QString text = QStringLiteral("状态：%1").arg(fatigueLevelText(level));
+    if (!triggerText.isEmpty()) {
+        text += QStringLiteral(" 触发时间：%1").arg(triggerText);
+    }
+
+    bool shouldBeep = false;
+    std::lock_guard<std::mutex> lock(m_fatigueMutex);
+    shouldBeep = level != m_fatigueLevel && level != FatigueLevel::Awake;
+    m_fatigueLevel = level;
+    m_fatigueText = text;
+    m_fatigueScore = fatigueScore;
+    if (shouldBeep) {
+        QMetaObject::invokeMethod(qApp, []() {
+            QApplication::beep();
+        }, Qt::QueuedConnection);
+    }
+}
+
+void CameraPreviewWidget::resetFatigueWarning()
+{
+    m_fatigueSamples.clear();
+    m_closedEyeEvents.clear();
+    m_yawnEvents.clear();
+    m_currentClosed = false;
+    m_currentMouthOpen = false;
+    m_currentFatigue = false;
+    m_currentClosedEventCounted = false;
+    m_currentMouthOpenCounted = false;
+    setFatigueDecision(FatigueLevel::Awake, QString(), 0);
+}
+
+void CameraPreviewWidget::updateFatigueDecision(const QVector<DetectionOverlay> &overlays,
+                                                const std::chrono::steady_clock::time_point &now)
+{
+    if (m_detectionMode != DetectionMode::Fatigue) {
+        return;
+    }
+
+    const bool closedNow = hasDetectionLabel(overlays, QStringLiteral("close_eye"));
+    const bool mouthOpenNow = hasDetectionLabel(overlays, QStringLiteral("open_mouth"));
+
+    m_fatigueSamples.push_back({now, closedNow});
+    while (!m_fatigueSamples.empty() &&
+           now - m_fatigueSamples.front().time > std::chrono::seconds(60)) {
+        m_fatigueSamples.pop_front();
+    }
+
+    if (closedNow && !m_currentClosed) {
+        m_currentClosed = true;
+        m_currentClosedEventCounted = false;
+        m_closedStart = now;
+    } else if (!closedNow && m_currentClosed) {
+        m_currentClosed = false;
+        m_currentClosedEventCounted = false;
+    }
+    if (m_currentClosed && !m_currentClosedEventCounted &&
+        now - m_closedStart >= std::chrono::milliseconds(400)) {
+        m_closedEyeEvents.push_back(now);
+        m_currentClosedEventCounted = true;
+    }
+
+    if (mouthOpenNow && !m_currentMouthOpen) {
+        m_currentMouthOpen = true;
+        m_currentMouthOpenCounted = false;
+        m_mouthOpenStart = now;
+    } else if (!mouthOpenNow && m_currentMouthOpen) {
+        m_currentMouthOpen = false;
+        m_currentMouthOpenCounted = false;
+    }
+    if (m_currentMouthOpen && !m_currentMouthOpenCounted &&
+        now - m_mouthOpenStart >= std::chrono::seconds(1)) {
+        m_yawnEvents.push_back(now);
+        m_currentMouthOpenCounted = true;
+    }
+
+    const auto fiveMinutes = std::chrono::minutes(5);
+    while (!m_closedEyeEvents.empty() && now - m_closedEyeEvents.front() > fiveMinutes) {
+        m_closedEyeEvents.pop_front();
+    }
+    while (!m_yawnEvents.empty() && now - m_yawnEvents.front() > fiveMinutes) {
+        m_yawnEvents.pop_front();
+    }
+
+    int closedFrameCount = 0;
+    for (const FatigueSample &sample : m_fatigueSamples) {
+        if (sample.closed) {
+            ++closedFrameCount;
+        }
+    }
+    const double perclos = m_fatigueSamples.empty()
+        ? 0.0
+        : static_cast<double>(closedFrameCount) / static_cast<double>(m_fatigueSamples.size());
+
+    int fatigueScore = static_cast<int>(m_closedEyeEvents.size() + m_yawnEvents.size());
+    if (m_yawnEvents.size() >= 2) {
+        ++fatigueScore;
+    }
+    const bool perclosFatigue = perclos >= 0.30;
+    const bool scoreFatigue = fatigueScore >= 2;
+    const bool fatigueNow = perclosFatigue || scoreFatigue;
+
+    if (fatigueNow && !m_currentFatigue) {
+        m_currentFatigue = true;
+        m_fatigueStart = now;
+    } else if (!fatigueNow && m_currentFatigue) {
+        m_currentFatigue = false;
+    }
+
+    FatigueLevel level = FatigueLevel::Awake;
+    if (fatigueNow) {
+        level = m_currentFatigue && now - m_fatigueStart >= std::chrono::seconds(10)
+            ? FatigueLevel::Severe
+            : FatigueLevel::Fatigue;
+    }
+
+    if (level != FatigueLevel::Awake) {
+        FatigueLevel previousLevel = FatigueLevel::Awake;
+        {
+            std::lock_guard<std::mutex> lock(m_fatigueMutex);
+            previousLevel = m_fatigueLevel;
+        }
+        if (previousLevel == FatigueLevel::Awake) {
+            m_warningStart = now;
+        } else if (now - m_warningStart >= std::chrono::seconds(30)) {
+            resetFatigueWarning();
+            return;
+        }
+    }
+
+    QString triggerTime;
+    if (level != FatigueLevel::Awake) {
+        triggerTime = QTime::currentTime().toString(QStringLiteral("HH:mm:ss"));
+    }
+    setFatigueDecision(level, triggerTime, fatigueScore);
+}
+
+void CameraPreviewWidget::startDetection()
+{
+    if (m_detectionMode == DetectionMode::None || m_detectionRunning.load()) {
+        return;
+    }
+
+    m_detectionRunning.store(true);
+    m_detectionThread = std::thread(&CameraPreviewWidget::detectionLoop, this);
+}
+
+void CameraPreviewWidget::stopDetection()
+{
+    m_detectionRunning.store(false);
+    if (m_detectionThread.joinable()) {
+        m_detectionThread.join();
+    }
+}
+
+void CameraPreviewWidget::detectionLoop()
+{
+    InspectionYoloDetector detector;
+    bool initialized = false;
+    {
+        std::lock_guard<std::mutex> lock(g_detectorInitMutex);
+        if (m_detectionMode == DetectionMode::Defect) {
+            initialized = detector.init("model/defect/defect_best_i8.rknn",
+                                        "model/defect/dataset.txt",
+                                        2,
+                                        kYoloThreshold,
+                                        RKNN_NPU_CORE_2);
+        } else if (m_detectionMode == DetectionMode::Fatigue) {
+            initialized = detector.init("model/fatigue/fatigue_two_outputs_i8.rknn",
+                                        "model/fatigue/dataset.txt",
+                                        3,
+                                        kYoloThreshold,
+                                        RKNN_NPU_CORE_1);
+        }
+    }
+
+    if (!initialized) {
+        std::fprintf(stderr, "[ERROR] HMI detection init failed for %s\n", m_devicePath.toStdString().c_str());
+        return;
+    }
+
+    uint64_t lastSeq = 0;
+    uint64_t inferCount = 0;
+    size_t lastDetectionCount = 0;
+    auto lastLog = std::chrono::steady_clock::now();
+    const char *modeName = m_detectionMode == DetectionMode::Defect ? "defect" : "fatigue";
+    while (m_detectionRunning.load()) {
+        cv::Mat gray;
+        {
+            std::lock_guard<std::mutex> lock(m_inferenceMutex);
+            if (m_inferenceSeq != lastSeq && !m_inferenceGray.empty()) {
+                lastSeq = m_inferenceSeq;
+                gray = m_inferenceGray.clone();
+            }
+        }
+
+        if (gray.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+
+        std::vector<YoloDetection> detections;
+        if (!detector.detect(gray, detections)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            continue;
+        }
+        ++inferCount;
+        lastDetectionCount = detections.size();
+
+        QVector<DetectionOverlay> overlays;
+        overlays.reserve(static_cast<int>(detections.size()));
+        for (const YoloDetection &detection : detections) {
+            DetectionOverlay overlay;
+            overlay.modelBox = QRectF(detection.box.x,
+                                      detection.box.y,
+                                      detection.box.width,
+                                      detection.box.height);
+            overlay.label = QString::fromStdString(detector.label(detection.classId));
+            overlay.score = detection.score;
+            if (m_detectionMode == DetectionMode::Fatigue &&
+                !isCenterVisionDetection(overlay.modelBox)) {
+                continue;
+            }
+            overlays.push_back(overlay);
+        }
+        if (m_detectionMode == DetectionMode::Fatigue) {
+            updateFatigueDecision(overlays, std::chrono::steady_clock::now());
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m_overlayMutex);
+            m_detectionOverlays = overlays;
+            m_detectionReady = true;
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastLog >= std::chrono::seconds(2)) {
+            std::fprintf(stdout,
+                         "[INFO] HMI %s infer frames=%llu detections=%zu camera=%s\n",
+                         modeName,
+                         static_cast<unsigned long long>(inferCount),
+                         lastDetectionCount,
+                         m_devicePath.toStdString().c_str());
+            std::fflush(stdout);
+            lastLog = now;
+        }
+    }
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -483,7 +1065,7 @@ QWidget *MainWindow::buildCameraArea()
     chipLayout->addWidget(createLabel(QStringLiteral("字符识别和缺陷检测共用 /dev/video21"), QStringLiteral("secondaryText")));
     m_camera1Preview = new CameraPreviewWidget(QStringLiteral("摄像头 1：/dev/video21"),
                                                QStringLiteral("/dev/video21"),
-                                               false,
+                                               CameraPreviewWidget::DetectionMode::Defect,
                                                chipCard);
     chipLayout->addWidget(m_camera1Preview, 1);
 
@@ -495,7 +1077,7 @@ QWidget *MainWindow::buildCameraArea()
     fatigueLayout->addWidget(createLabel(QStringLiteral("疲劳检测使用 /dev/video23"), QStringLiteral("secondaryText")));
     m_camera2Preview = new CameraPreviewWidget(QStringLiteral("摄像头 2：/dev/video23"),
                                                QStringLiteral("/dev/video23"),
-                                               true,
+                                               CameraPreviewWidget::DetectionMode::Fatigue,
                                                fatigueCard);
     fatigueLayout->addWidget(m_camera2Preview, 1);
 

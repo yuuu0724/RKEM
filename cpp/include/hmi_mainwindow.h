@@ -3,9 +3,18 @@
 
 #include <QImage>
 #include <QMainWindow>
+#include <QRectF>
 #include <QString>
 #include <QStringList>
 #include <QVector>
+
+#include <atomic>
+#include <chrono>
+#include <deque>
+#include <mutex>
+#include <thread>
+
+#include <opencv2/core.hpp>
 
 class QComboBox;
 class QDialog;
@@ -71,9 +80,15 @@ class CameraPreviewWidget : public QWidget {
     Q_OBJECT
 
 public:
+    enum class DetectionMode {
+        None,
+        Defect,
+        Fatigue
+    };
+
     explicit CameraPreviewWidget(const QString &cameraName,
                                  const QString &devicePath,
-                                 bool fatigueOverlay,
+                                 DetectionMode detectionMode,
                                  QWidget *parent = nullptr);
     ~CameraPreviewWidget() override;
 
@@ -92,8 +107,40 @@ private:
     void readFrame();
     void drawPlaceholder(QPainter &painter, const QRect &area);
     void drawFatigueOverlay(QPainter &painter, const QRect &area);
+    void drawDetectionOverlay(QPainter &painter, const QRect &imageArea);
+    void updateInferenceFrame(const cv::Mat &rgb);
+    void startDetection();
+    void stopDetection();
+    void detectionLoop();
 
 private:
+    struct DetectionOverlay {
+        QRectF modelBox;
+        QString label;
+        float score = 0.0f;
+    };
+
+    struct FatigueSample {
+        std::chrono::steady_clock::time_point time;
+        bool closed = false;
+    };
+
+    enum class FatigueLevel {
+        Awake,
+        Fatigue,
+        Severe
+    };
+
+    void updateFatigueDecision(const QVector<DetectionOverlay> &overlays,
+                               const std::chrono::steady_clock::time_point &now);
+    void setFatigueDecision(FatigueLevel level,
+                            const QString &triggerText,
+                            int fatigueScore);
+    void resetFatigueWarning();
+    bool isCenterVisionDetection(const QRectF &modelBox) const;
+    bool hasDetectionLabel(const QVector<DetectionOverlay> &overlays, const QString &label) const;
+    QString fatigueLevelText(FatigueLevel level) const;
+
     QString m_cameraName;
     QString m_devicePath;
     QString m_message;
@@ -101,8 +148,34 @@ private:
     QImage m_frame;
     QTimer *m_frameTimer;
     void *m_capture;
+    int m_captureServicePid = -1;
+    QString m_captureFramePath;
     bool m_online;
     bool m_fatigueOverlay;
+    DetectionMode m_detectionMode;
+    std::atomic<bool> m_detectionRunning;
+    std::thread m_detectionThread;
+    std::mutex m_inferenceMutex;
+    cv::Mat m_inferenceGray;
+    uint64_t m_inferenceSeq = 0;
+    std::mutex m_overlayMutex;
+    QVector<DetectionOverlay> m_detectionOverlays;
+    bool m_detectionReady = false;
+    std::mutex m_fatigueMutex;
+    FatigueLevel m_fatigueLevel = FatigueLevel::Awake;
+    int m_fatigueScore = 0;
+    std::deque<FatigueSample> m_fatigueSamples;
+    std::deque<std::chrono::steady_clock::time_point> m_closedEyeEvents;
+    std::deque<std::chrono::steady_clock::time_point> m_yawnEvents;
+    bool m_currentClosed = false;
+    bool m_currentMouthOpen = false;
+    bool m_currentFatigue = false;
+    bool m_currentClosedEventCounted = false;
+    bool m_currentMouthOpenCounted = false;
+    std::chrono::steady_clock::time_point m_closedStart;
+    std::chrono::steady_clock::time_point m_mouthOpenStart;
+    std::chrono::steady_clock::time_point m_fatigueStart;
+    std::chrono::steady_clock::time_point m_warningStart;
 };
 
 class MainWindow : public QMainWindow {

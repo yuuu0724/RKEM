@@ -207,12 +207,17 @@ if (BUILD_QT_HMI)
     add_executable(integrated_inspection_hmi
         src/hmi_main.cc
         src/hmi_mainwindow.cc
+        src/yolo_detector.cc
         include/hmi_mainwindow.h
+        include/yolo_detector.h
     )
 
     target_link_libraries(integrated_inspection_hmi
         Qt${QT_VERSION_MAJOR}::Widgets
         ${OpenCV_LIBS}
+        ${LIBRKNNRT}
+        dl
+        pthread
     )
 
     target_include_directories(integrated_inspection_hmi PRIVATE
