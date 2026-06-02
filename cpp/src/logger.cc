@@ -89,10 +89,7 @@ void Logger::SetLogLevel(LogLevel level) {
 void Logger::LogOcrResult(const OcrResult& result) {
     std::ostringstream oss;
     oss << "[" << GetCurrentTimeString() << "] "
-        << "识别文本: " << result.text
-        << ", 置信度: " << std::fixed << std::setprecision(2) << result.confidence
-        << ", 边界框: [" << result.bbox[0] << "," << result.bbox[1]
-        << "," << result.bbox[2] << "," << result.bbox[3] << "]";
+        << "识别文本: " << result.text;
 
     std::lock_guard<std::mutex> lock(log_mutex_);
     log_queue_.push("[OCR] " + oss.str());
@@ -105,9 +102,7 @@ void Logger::LogOcrResult(const OcrResult& result) {
 void Logger::LogFatigueResult(const FatigueResult& result) {
     std::ostringstream oss;
     oss << "[" << GetCurrentTimeString() << "] "
-        << "检测类别: " << result.category
-        << ", 置信度: " << std::fixed << std::setprecision(2) << result.confidence
-        << ", 状态: " << (result.is_fatigue ? "疲劳" : "正常");
+        << "状态: " << (result.is_fatigue ? "疲劳" : "正常");
 
     std::lock_guard<std::mutex> lock(log_mutex_);
     log_queue_.push("[FATIGUE] " + oss.str());
@@ -120,10 +115,7 @@ void Logger::LogFatigueResult(const FatigueResult& result) {
 void Logger::LogDefectResult(const DefectResult& result) {
     std::ostringstream oss;
     oss << "[" << GetCurrentTimeString() << "] "
-        << "缺陷类型: " << result.defect_type
-        << ", 置信度: " << std::fixed << std::setprecision(2) << result.confidence
-        << ", 位置: [" << result.bbox[0] << "," << result.bbox[1]
-        << "," << result.bbox[2] << "," << result.bbox[3] << "]";
+        << "缺陷类型: " << result.defect_type;
 
     std::lock_guard<std::mutex> lock(log_mutex_);
     log_queue_.push("[DEFECT] " + oss.str());

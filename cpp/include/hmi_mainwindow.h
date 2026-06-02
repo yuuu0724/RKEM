@@ -29,6 +29,8 @@ class QTimer;
 class QVBoxLayout;
 class QWidget;
 
+class HmiOcrDetector;
+
 struct DeviceStatus {
     bool plcConnected = false;
     bool camera1Online = false;
@@ -98,6 +100,9 @@ public:
     void setOnline(bool online);
     void setMessage(const QString &message);
     void setFatigueText(const QString &text);
+    bool latestGrayFrame(cv::Mat &gray) const;
+    bool hasActiveDetections() const;
+    QString latestDetectionSummary() const;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -155,10 +160,10 @@ private:
     DetectionMode m_detectionMode;
     std::atomic<bool> m_detectionRunning;
     std::thread m_detectionThread;
-    std::mutex m_inferenceMutex;
+    mutable std::mutex m_inferenceMutex;
     cv::Mat m_inferenceGray;
     uint64_t m_inferenceSeq = 0;
-    std::mutex m_overlayMutex;
+    mutable std::mutex m_overlayMutex;
     QVector<DetectionOverlay> m_detectionOverlays;
     bool m_detectionReady = false;
     std::mutex m_fatigueMutex;
@@ -233,7 +238,6 @@ private slots:
 
 private:
     QWidget *buildHeader();
-    QWidget *buildSidebar();
     QWidget *buildKpiCards();
     QWidget *buildCameraArea();
     QWidget *buildSlotResultArea();
@@ -245,7 +249,6 @@ private:
     int px(int value) const;
     QFrame *createCard(const QString &objectName = QString(), QWidget *parent = nullptr);
     QLabel *createLabel(const QString &text, const QString &objectName = QString(), QWidget *parent = nullptr);
-    QPushButton *createMenuButton(const QString &text, bool selected, bool warning = false);
     QPushButton *createCommandButton(const QString &text, const QString &kind = QString());
     QLabel *createStatusChip(const QString &text, const QString &state);
     QWidget *createFieldRow(const QString &label, QWidget *field);
@@ -264,6 +267,15 @@ private:
     QString valueOrDash(const QString &value) const;
     QString slotState(const QString &status) const;
     QColor stateColor(const QString &state) const;
+    void startOcrThread();
+    void stopOcrThread();
+    void ocrLoop();
+    void handleOcrResult(const QString &rawText,
+                         const QString &normalizedText,
+                         float bestScore,
+                         bool matched);
+    void appendAlarmLog(const QString &eventType, const QString &detail);
+    void refreshInspectionStatus();
 
 private:
     struct SlotWidgets {
@@ -281,7 +293,6 @@ private:
 
     QWidget *m_canvas = nullptr;
     QWidget *m_header = nullptr;
-    QWidget *m_sidebar = nullptr;
     QWidget *m_rightPanel = nullptr;
     QLabel *m_plcStatusLabel = nullptr;
     QLabel *m_camera1StatusLabel = nullptr;
@@ -306,6 +317,21 @@ private:
     QVector<SlotWidgets> m_slotWidgets;
     QTimer *m_clockTimer = nullptr;
     double m_scale = 1.0;
+    std::atomic<bool> m_ocrRunning{false};
+    std::thread m_ocrThread;
+    std::mutex m_inspectionMutex;
+    bool m_inspectionActive = false;
+    QString m_currentTemplate;
+    QString m_currentMatchMode;
+    double m_currentOcrThreshold = 0.5;
+    int m_totalCount = 0;
+    int m_goodCount = 0;
+    int m_badCount = 0;
+    int m_nextSlotIndex = 0;
+    QString m_lastMismatchSignature;
+    std::chrono::steady_clock::time_point m_lastMismatchLog;
+    QString m_lastDefectSignature;
+    std::chrono::steady_clock::time_point m_lastDefectLog;
 
     QDialog *m_employeeDialog = nullptr;
     QVector<QWidget *> m_employeePages;

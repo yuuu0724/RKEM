@@ -207,13 +207,21 @@ if (BUILD_QT_HMI)
     add_executable(integrated_inspection_hmi
         src/hmi_main.cc
         src/hmi_mainwindow.cc
+        src/hmi_ocr_detector.cc
         src/yolo_detector.cc
+        ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
+        ${CHIP_ROOT}/cpp/postprocess.cc
+        ${CHIP_ROOT}/cpp/clipper.cc
         include/hmi_mainwindow.h
+        include/hmi_ocr_detector.h
         include/yolo_detector.h
     )
 
     target_link_libraries(integrated_inspection_hmi
         Qt${QT_VERSION_MAJOR}::Widgets
+        imageutils
+        fileutils
+        ${LIBRGA}
         ${OpenCV_LIBS}
         ${LIBRKNNRT}
         dl
@@ -222,6 +230,8 @@ if (BUILD_QT_HMI)
 
     target_include_directories(integrated_inspection_hmi PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CHIP_ROOT}/cpp
+        ${CHIP_ROOT}/utils
         ${OpenCV_INCLUDE_DIRS}
     )
 endif()

@@ -1,10 +1,12 @@
 #include "hmi_mainwindow.h"
+#include "hmi_ocr_detector.h"
 #include "yolo_detector.h"
 
 #include <QApplication>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDialog>
+#include <QDir>
 #include <QDoubleValidator>
 #include <QFrame>
 #include <QGridLayout>
@@ -18,6 +20,7 @@
 #include <QPaintEvent>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QSizePolicy>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTimer>
@@ -67,6 +70,22 @@ struct RawFrameHeader {
 QString metricText(int value)
 {
     return QLocale(QLocale::Chinese).toString(value);
+}
+
+void writeHmiAlarmLog(const QString &eventType, const QString &detail)
+{
+    QDir().mkpath(QStringLiteral("logs"));
+    std::ofstream out("logs/hmi_alarm.log", std::ios::app);
+    if (!out.is_open()) {
+        return;
+    }
+
+    const QString line = QStringLiteral("[%1] %2 %3\n")
+        .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")))
+        .arg(eventType)
+        .arg(detail);
+    const QByteArray bytes = line.toUtf8();
+    out.write(bytes.constData(), bytes.size());
 }
 
 bool decodeJpegFrameIfNeeded(const cv::Mat &frame, cv::Mat &bgr)
@@ -193,6 +212,63 @@ bool readCaptureServiceFrame(const QString &framePath, cv::Mat &frame)
 
     frame = image;
     return true;
+}
+
+QString defectLabelText(const QString &label)
+{
+    const QString normalized = label.trimmed().toLower();
+    if (normalized == QStringLiteral("pin_damage") ||
+        normalized == QStringLiteral("pin_missing") ||
+        normalized.contains(QStringLiteral("pin"))) {
+        return QStringLiteral("引脚损坏");
+    }
+    if (normalized == QStringLiteral("scratch") ||
+        normalized.contains(QStringLiteral("scratch"))) {
+        return QStringLiteral("划痕");
+    }
+    return label;
+}
+
+QString defectReasonText(const QString &defectSummary)
+{
+    QStringList defects;
+    const QString normalized = defectSummary.toLower();
+    if (normalized.contains(QStringLiteral("pin_damage")) ||
+        normalized.contains(QStringLiteral("pin_missing")) ||
+        normalized.contains(QStringLiteral("pin")) ||
+        defectSummary.contains(QStringLiteral("引脚"))) {
+        defects.append(QStringLiteral("引脚损坏"));
+    }
+    if (normalized.contains(QStringLiteral("scratch")) ||
+        defectSummary.contains(QStringLiteral("划痕"))) {
+        defects.append(QStringLiteral("划痕"));
+    }
+    defects.removeDuplicates();
+    return defects.isEmpty() ? defectSummary : defects.join(QStringLiteral("；"));
+}
+
+QString wrapSlotValue(const QString &value, int maxLineLength = 16)
+{
+    if (value.isEmpty() || maxLineLength <= 0) {
+        return value;
+    }
+
+    QString wrapped;
+    int lineLength = 0;
+    for (const QChar ch : value) {
+        if (ch == QLatin1Char('\n')) {
+            wrapped.append(ch);
+            lineLength = 0;
+            continue;
+        }
+        if (lineLength >= maxLineLength) {
+            wrapped.append(QLatin1Char('\n'));
+            lineLength = 0;
+        }
+        wrapped.append(ch);
+        ++lineLength;
+    }
+    return wrapped;
 }
 }
 
@@ -575,7 +651,7 @@ void CameraPreviewWidget::drawDetectionOverlay(QPainter &painter, const QRect &i
 
 void CameraPreviewWidget::updateInferenceFrame(const cv::Mat &rgb)
 {
-    if (m_detectionMode == DetectionMode::None || rgb.empty()) {
+    if (rgb.empty()) {
         return;
     }
 
@@ -586,6 +662,42 @@ void CameraPreviewWidget::updateInferenceFrame(const cv::Mat &rgb)
     std::lock_guard<std::mutex> lock(m_inferenceMutex);
     m_inferenceGray = gray.clone();
     ++m_inferenceSeq;
+}
+
+bool CameraPreviewWidget::latestGrayFrame(cv::Mat &gray) const
+{
+    std::lock_guard<std::mutex> lock(m_inferenceMutex);
+    if (m_inferenceGray.empty()) {
+        return false;
+    }
+    gray = m_inferenceGray.clone();
+    return true;
+}
+
+bool CameraPreviewWidget::hasActiveDetections() const
+{
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    return m_detectionReady && !m_detectionOverlays.isEmpty();
+}
+
+QString CameraPreviewWidget::latestDetectionSummary() const
+{
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    if (!m_detectionReady || m_detectionOverlays.isEmpty()) {
+        return QStringLiteral("--");
+    }
+
+    QStringList parts;
+    for (const DetectionOverlay &overlay : m_detectionOverlays) {
+        parts.append(QStringLiteral("%1 %.1f%% [%2,%3,%4,%5]")
+                         .arg(defectLabelText(overlay.label))
+                         .arg(overlay.score * 100.0f, 0, 'f', 1)
+                         .arg(static_cast<int>(overlay.modelBox.left()))
+                         .arg(static_cast<int>(overlay.modelBox.top()))
+                         .arg(static_cast<int>(overlay.modelBox.width()))
+                         .arg(static_cast<int>(overlay.modelBox.height())));
+    }
+    return parts.join(QStringLiteral("; "));
 }
 
 bool CameraPreviewWidget::isCenterVisionDetection(const QRectF &modelBox) const
@@ -634,6 +746,7 @@ void CameraPreviewWidget::setFatigueDecision(FatigueLevel level,
     m_fatigueText = text;
     m_fatigueScore = fatigueScore;
     if (shouldBeep) {
+        writeHmiAlarmLog(fatigueLevelText(level), fatigueLevelText(level));
         QMetaObject::invokeMethod(qApp, []() {
             QApplication::beep();
         }, Qt::QueuedConnection);
@@ -642,6 +755,7 @@ void CameraPreviewWidget::setFatigueDecision(FatigueLevel level,
 
 void CameraPreviewWidget::resetFatigueWarning()
 {
+    writeHmiAlarmLog(QStringLiteral("疲劳报警解除"), QStringLiteral("清醒"));
     m_fatigueSamples.clear();
     m_closedEyeEvents.clear();
     m_yawnEvents.clear();
@@ -878,9 +992,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_clockTimer, &QTimer::timeout, this, &MainWindow::refreshClock);
     refreshClock();
     m_clockTimer->start(1000);
+    startOcrThread();
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow()
+{
+    stopOcrThread();
+}
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
@@ -934,9 +1052,6 @@ void MainWindow::buildUi()
     bodyLayout->setContentsMargins(0, 0, 0, 0);
     bodyLayout->setSpacing(px(8));
 
-    m_sidebar = buildSidebar();
-    bodyLayout->addWidget(m_sidebar);
-
     QWidget *center = new QWidget(body);
     QVBoxLayout *centerLayout = new QVBoxLayout(center);
     centerLayout->setContentsMargins(0, 0, 0, 0);
@@ -957,84 +1072,23 @@ void MainWindow::buildUi()
 QWidget *MainWindow::buildHeader()
 {
     QFrame *bar = createCard(QStringLiteral("header"));
-    bar->setFixedHeight(px(60));
-
-    QLabel *icon = createLabel(QStringLiteral("AI"), QStringLiteral("aiIcon"));
-    icon->setAlignment(Qt::AlignCenter);
-    icon->setFixedSize(px(38), px(38));
+    bar->setFixedHeight(px(48));
 
     QLabel *title = createLabel(QStringLiteral("芯片视觉检测与员工管理系统"), QStringLiteral("headerTitle"));
-    QLabel *subtitle = createLabel(QStringLiteral("工业检测 ｜ 高清视觉 ｜ 字符识别 ｜ 缺陷检测 ｜ 疲劳识别"),
-                                   QStringLiteral("headerSubtitle"));
+    title->setAlignment(Qt::AlignCenter);
 
-    QVBoxLayout *titleLayout = new QVBoxLayout;
-    titleLayout->setContentsMargins(0, 0, 0, 0);
-    titleLayout->setSpacing(2);
-    titleLayout->addWidget(title);
-    titleLayout->addWidget(subtitle);
+    m_timeLabel = createLabel(QStringLiteral("--"), QStringLiteral("headerTime"));
+    m_timeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-    QHBoxLayout *statusLayout = new QHBoxLayout;
-    statusLayout->setContentsMargins(0, 0, 0, 0);
-    statusLayout->setSpacing(px(5));
-
-    m_plcStatusLabel = createStatusChip(QStringLiteral("PLC：--"), QStringLiteral("warn"));
-    m_camera1StatusLabel = createStatusChip(QStringLiteral("相机 1：--"), QStringLiteral("warn"));
-    m_camera2StatusLabel = createStatusChip(QStringLiteral("相机 2：--"), QStringLiteral("warn"));
-    m_shiftLabel = createStatusChip(QStringLiteral("班次：--"), QStringLiteral("blue"));
-    m_timeLabel = createStatusChip(QStringLiteral("--"), QStringLiteral("cyan"));
-
-    statusLayout->addWidget(m_plcStatusLabel);
-    statusLayout->addWidget(m_camera1StatusLabel);
-    statusLayout->addWidget(m_camera2StatusLabel);
-    statusLayout->addWidget(m_shiftLabel);
-    statusLayout->addWidget(m_timeLabel);
-
-    QHBoxLayout *layout = new QHBoxLayout(bar);
-    layout->setContentsMargins(px(12), 0, px(10), 0);
-    layout->setSpacing(px(9));
-    layout->addWidget(icon);
-    layout->addLayout(titleLayout, 1);
-    layout->addLayout(statusLayout);
+    QGridLayout *layout = new QGridLayout(bar);
+    layout->setContentsMargins(px(12), 0, px(12), 0);
+    layout->setSpacing(0);
+    layout->setColumnStretch(0, 1);
+    layout->setColumnStretch(1, 1);
+    layout->setColumnStretch(2, 1);
+    layout->addWidget(title, 0, 0, 1, 3, Qt::AlignCenter);
+    layout->addWidget(m_timeLabel, 0, 2, Qt::AlignRight | Qt::AlignVCenter);
     return bar;
-}
-
-QWidget *MainWindow::buildSidebar()
-{
-    QFrame *sidebar = createCard(QStringLiteral("sidebar"));
-    sidebar->setFixedWidth(px(160));
-
-    QVBoxLayout *layout = new QVBoxLayout(sidebar);
-    layout->setContentsMargins(px(8), px(9), px(8), px(9));
-    layout->setSpacing(px(7));
-
-    layout->addWidget(createMenuButton(QStringLiteral("检测总览"), true));
-    layout->addWidget(createMenuButton(QStringLiteral("摄像头预览"), false));
-    layout->addWidget(createMenuButton(QStringLiteral("芯片槽位判定 1×4"), false));
-    layout->addWidget(createMenuButton(QStringLiteral("模板设置"), false));
-
-    QPushButton *employee = createMenuButton(QStringLiteral("员工管理 打开"), false, true);
-    connect(employee, &QPushButton::clicked, this, &MainWindow::showEmployeeDialog);
-    layout->addWidget(employee);
-    layout->addWidget(createMenuButton(QStringLiteral("报警日志"), false));
-    layout->addStretch(1);
-
-    QFrame *status = createCard(QStringLiteral("systemCard"));
-    QVBoxLayout *statusLayout = new QVBoxLayout(status);
-    statusLayout->setContentsMargins(px(9), px(8), px(9), px(8));
-    statusLayout->setSpacing(px(4));
-    statusLayout->addWidget(createLabel(QStringLiteral("系统状态"), QStringLiteral("cardTitle")));
-    m_visionModelLabel = createLabel(QStringLiteral("视觉检测模型：--"), QStringLiteral("miniText"));
-    m_ocrModelLabel = createLabel(QStringLiteral("字符识别模型：--"), QStringLiteral("miniText"));
-    m_templateLabel = createLabel(QStringLiteral("当前芯片模板：--"), QStringLiteral("miniText"));
-    m_templateVersionLabel = createLabel(QStringLiteral("模板版本：--"), QStringLiteral("miniText"));
-    m_runningStatusLabel = createLabel(QStringLiteral("系统运行状态：--"), QStringLiteral("miniText"));
-    statusLayout->addWidget(m_visionModelLabel);
-    statusLayout->addWidget(m_ocrModelLabel);
-    statusLayout->addWidget(m_templateLabel);
-    statusLayout->addWidget(m_templateVersionLabel);
-    statusLayout->addWidget(m_runningStatusLabel);
-    layout->addWidget(status);
-    return sidebar;
 }
 
 QWidget *MainWindow::buildKpiCards()
@@ -1097,7 +1151,7 @@ QWidget *MainWindow::buildSlotResultArea()
     header->setContentsMargins(0, 0, 0, 0);
     header->addWidget(createLabel(QStringLiteral("1 × 4 芯片槽位检测结果"), QStringLiteral("cardTitle")));
     header->addStretch(1);
-    QLabel *rule = createLabel(QStringLiteral("判定规则：字符匹配 + 无缺陷 = 良品；否则判为次品并输出原因"),
+    QLabel *rule = createLabel(QStringLiteral("判定规则：字符模糊匹配通过 + 无缺陷 = 良品；最多允许缺 3 个字符"),
                                QStringLiteral("ruleText"));
     rule->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     header->addWidget(rule);
@@ -1129,18 +1183,12 @@ QWidget *MainWindow::buildRightPanel()
 
     m_templateEdit = new QLineEdit(templateCard);
     m_templateEdit->setPlaceholderText(QStringLiteral("请输入字符模板，如 STM32F103C8T6"));
-    m_matchModeCombo = new QComboBox(templateCard);
-    m_matchModeCombo->addItem(QStringLiteral("等待匹配方式"));
     m_defectTypeCombo = new QComboBox(templateCard);
-    m_defectTypeCombo->addItem(QStringLiteral("引脚缺失"));
+    m_defectTypeCombo->addItem(QStringLiteral("全部缺陷"));
+    m_defectTypeCombo->addItem(QStringLiteral("引脚损坏"));
     m_defectTypeCombo->addItem(QStringLiteral("划痕"));
-    m_ocrThresholdEdit = new QLineEdit(templateCard);
-    m_ocrThresholdEdit->setPlaceholderText(QStringLiteral("--"));
-    m_ocrThresholdEdit->setValidator(new QDoubleValidator(0.0, 1.0, 3, m_ocrThresholdEdit));
 
     templateLayout->addWidget(createFieldRow(QStringLiteral("键盘输入字符模板"), m_templateEdit));
-    templateLayout->addWidget(createFieldRow(QStringLiteral("匹配方式"), m_matchModeCombo));
-    templateLayout->addWidget(createFieldRow(QStringLiteral("OCR 置信度阈值"), m_ocrThresholdEdit));
     templateLayout->addWidget(createFieldRow(QStringLiteral("缺陷检测类型"), m_defectTypeCombo));
     QPushButton *startInspection = createCommandButton(QStringLiteral("确认并开始检测"), QStringLiteral("primary"));
     connect(startInspection, &QPushButton::clicked, this, &MainWindow::confirmInspectionTemplate);
@@ -1149,18 +1197,12 @@ QWidget *MainWindow::buildRightPanel()
     connect(m_templateEdit, &QLineEdit::editingFinished, this, [this]() {
         emit templateChanged(m_templateEdit->text().trimmed());
     });
-    connect(m_matchModeCombo, &QComboBox::currentTextChanged, this, &MainWindow::matchModeChanged);
-    connect(m_ocrThresholdEdit, &QLineEdit::editingFinished, this, [this]() {
-        bool ok = false;
-        const double value = m_ocrThresholdEdit->text().toDouble(&ok);
-        if (ok) {
-            emit ocrThresholdChanged(value);
-        }
-    });
     auto emitDefectOptions = [this]() {
         const QString defectType = m_defectTypeCombo->currentText();
-        emit defectOptionsChanged(defectType == QStringLiteral("引脚缺失"),
-                                  defectType == QStringLiteral("划痕"));
+        emit defectOptionsChanged(defectType == QStringLiteral("全部缺陷") ||
+                                      defectType == QStringLiteral("引脚损坏"),
+                                  defectType == QStringLiteral("全部缺陷") ||
+                                      defectType == QStringLiteral("划痕"));
     };
     connect(m_defectTypeCombo, &QComboBox::currentTextChanged, this, emitDefectOptions);
 
@@ -1168,17 +1210,13 @@ QWidget *MainWindow::buildRightPanel()
     QVBoxLayout *employeeLayout = new QVBoxLayout(employeeCard);
     employeeLayout->setContentsMargins(px(11), px(10), px(11), px(10));
     employeeLayout->setSpacing(px(8));
-    employeeLayout->addWidget(createLabel(QStringLiteral("员工管理"), QStringLiteral("cardTitle")));
-    QLabel *desc = createLabel(QStringLiteral("员工管理用于产品质量追溯与绩效分析，可进行签到、签退、离岗、返岗、工时统计和疲劳告警等管理。"),
-                               QStringLiteral("secondaryText"));
-    desc->setWordWrap(true);
-    employeeLayout->addWidget(desc, 1);
-    QPushButton *openEmployee = createCommandButton(QStringLiteral("打开员工管理"), QStringLiteral("primary"));
+    QPushButton *openEmployee = createCommandButton(QStringLiteral("员工管理"), QStringLiteral("primary"));
     connect(openEmployee, &QPushButton::clicked, this, &MainWindow::showEmployeeDialog);
     employeeLayout->addWidget(openEmployee);
 
     layout->addWidget(templateCard);
-    layout->addWidget(employeeCard, 1);
+    layout->addWidget(employeeCard);
+    layout->addStretch(1);
     return panel;
 }
 
@@ -1311,24 +1349,234 @@ void MainWindow::showEmployeeDialog()
 void MainWindow::confirmInspectionTemplate()
 {
     const QString chipTemplate = m_templateEdit ? m_templateEdit->text().trimmed() : QString();
-    const QString matchMode = m_matchModeCombo ? m_matchModeCombo->currentText() : QString();
-    bool thresholdOk = false;
-    const double threshold = m_ocrThresholdEdit ? m_ocrThresholdEdit->text().toDouble(&thresholdOk) : 0.0;
+    const QString matchMode = QStringLiteral("模糊匹配（最多缺3字）");
+    const double threshold = 0.5;
     const QString defectType = m_defectTypeCombo ? m_defectTypeCombo->currentText() : QString();
-    const bool pinMissingEnabled = defectType == QStringLiteral("引脚缺失");
-    const bool scratchEnabled = defectType == QStringLiteral("划痕");
+    const bool pinMissingEnabled = defectType == QStringLiteral("全部缺陷") ||
+        defectType == QStringLiteral("引脚损坏");
+    const bool scratchEnabled = defectType == QStringLiteral("全部缺陷") ||
+        defectType == QStringLiteral("划痕");
+    if (chipTemplate.isEmpty()) {
+        if (m_runningStatusLabel) {
+            m_runningStatusLabel->setText(QStringLiteral("系统运行状态：模板不能为空"));
+        }
+        appendAlarmLog(QStringLiteral("模板设置错误"), QStringLiteral("模板为空"));
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_inspectionMutex);
+        m_currentTemplate = chipTemplate;
+        m_currentMatchMode = matchMode;
+        m_currentOcrThreshold = threshold;
+        m_inspectionActive = true;
+        m_totalCount = 0;
+        m_goodCount = 0;
+        m_badCount = 0;
+        m_nextSlotIndex = 0;
+        m_lastMismatchSignature.clear();
+    }
+
+    updateKpi(0, 0, 0, 0.0);
+    for (int i = 0; i < m_slotWidgets.size(); ++i) {
+        updateSlotResult(i + 1,
+                         QStringLiteral("未检测"),
+                         chipTemplate,
+                         QStringLiteral("--"),
+                         QStringLiteral("--"),
+                         QStringLiteral("--"));
+    }
+    refreshInspectionStatus();
+    appendAlarmLog(QStringLiteral("开始检测"), QStringLiteral("开始检测"));
 
     emit templateChanged(chipTemplate);
     emit matchModeChanged(matchMode);
-    if (thresholdOk) {
-        emit ocrThresholdChanged(threshold);
-    }
+    emit ocrThresholdChanged(threshold);
     emit defectOptionsChanged(pinMissingEnabled, scratchEnabled);
     emit startInspectionRequested(chipTemplate,
                                   matchMode,
-                                  thresholdOk ? threshold : -1.0,
+                                  threshold,
                                   pinMissingEnabled,
                                   scratchEnabled);
+}
+
+void MainWindow::startOcrThread()
+{
+    if (m_ocrRunning.load()) {
+        return;
+    }
+    m_ocrRunning.store(true);
+    m_ocrThread = std::thread(&MainWindow::ocrLoop, this);
+}
+
+void MainWindow::stopOcrThread()
+{
+    m_ocrRunning.store(false);
+    if (m_ocrThread.joinable()) {
+        m_ocrThread.join();
+    }
+}
+
+void MainWindow::ocrLoop()
+{
+    HmiOcrDetector detector;
+    const bool initialized = detector.init("model/ocr/PP-OCRv5_mobile_det.rknn",
+                                           "model/ocr/PP-OCRv5_mobile_rec.rknn");
+    QMetaObject::invokeMethod(this, [this, initialized]() {
+        setStatusLabel(m_ocrModelLabel, QStringLiteral("字符识别模型"), initialized);
+        if (!initialized && m_runningStatusLabel) {
+            m_runningStatusLabel->setText(QStringLiteral("系统运行状态：OCR 模型加载失败"));
+        }
+    }, Qt::QueuedConnection);
+    if (!initialized) {
+        return;
+    }
+
+    while (m_ocrRunning.load()) {
+        QString chipTemplate;
+        double threshold = 0.5;
+        bool active = false;
+        {
+            std::lock_guard<std::mutex> lock(m_inspectionMutex);
+            active = m_inspectionActive;
+            chipTemplate = m_currentTemplate;
+            threshold = m_currentOcrThreshold;
+        }
+
+        if (!active || chipTemplate.isEmpty() || !m_camera1Preview) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+
+        cv::Mat gray;
+        if (!m_camera1Preview->latestGrayFrame(gray)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+
+        HmiOcrResult ocr;
+        if (detector.recognize(gray, threshold, ocr)) {
+            const bool matched = fuzzyChipMatch(chipTemplate.toStdString(), ocr.normalizedText, 3);
+            const QString rawText = QString::fromStdString(ocr.rawText);
+            const QString normalizedText = QString::fromStdString(ocr.normalizedText);
+            QMetaObject::invokeMethod(this, [this, rawText, normalizedText, score = ocr.bestScore, matched]() {
+                handleOcrResult(rawText, normalizedText, score, matched);
+            }, Qt::QueuedConnection);
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(900));
+    }
+}
+
+void MainWindow::handleOcrResult(const QString &rawText,
+                                 const QString &normalizedText,
+                                 float bestScore,
+                                 bool matched)
+{
+    const bool hasDefect = m_camera1Preview && m_camera1Preview->hasActiveDetections();
+    const QString defectSummary = hasDefect && m_camera1Preview
+        ? m_camera1Preview->latestDetectionSummary()
+        : QStringLiteral("--");
+    const bool finalGood = matched && !hasDefect;
+
+    QString chipTemplate;
+    int slotIndex = 0;
+    int totalCount = 0;
+    int goodCount = 0;
+    int badCount = 0;
+    bool shouldLogMismatch = false;
+    bool shouldLogDefect = false;
+
+    {
+        std::lock_guard<std::mutex> lock(m_inspectionMutex);
+        if (!m_inspectionActive || m_currentTemplate.isEmpty()) {
+            return;
+        }
+
+        chipTemplate = m_currentTemplate;
+        ++m_totalCount;
+        if (finalGood) {
+            ++m_goodCount;
+        } else {
+            ++m_badCount;
+        }
+        m_nextSlotIndex = (m_nextSlotIndex % std::max(1, m_slotWidgets.size())) + 1;
+        slotIndex = m_nextSlotIndex;
+        totalCount = m_totalCount;
+        goodCount = m_goodCount;
+        badCount = m_badCount;
+
+        if (!matched) {
+            const QString signature = QStringLiteral("%1|%2").arg(chipTemplate, normalizedText);
+            const auto now = std::chrono::steady_clock::now();
+            if (signature != m_lastMismatchSignature ||
+                now - m_lastMismatchLog >= std::chrono::seconds(5)) {
+                m_lastMismatchSignature = signature;
+                m_lastMismatchLog = now;
+                shouldLogMismatch = true;
+            }
+        }
+        if (hasDefect) {
+            const QString signature = QStringLiteral("%1|%2").arg(chipTemplate, defectReasonText(defectSummary));
+            const auto now = std::chrono::steady_clock::now();
+            if (signature != m_lastDefectSignature ||
+                now - m_lastDefectLog >= std::chrono::seconds(5)) {
+                m_lastDefectSignature = signature;
+                m_lastDefectLog = now;
+                shouldLogDefect = true;
+            }
+        }
+    }
+
+    const double goodRate = totalCount > 0
+        ? static_cast<double>(goodCount) * 100.0 / static_cast<double>(totalCount)
+        : 0.0;
+    updateKpi(totalCount, goodCount, badCount, goodRate);
+
+    Q_UNUSED(rawText);
+    Q_UNUSED(bestScore);
+
+    const QString defectCategory = hasDefect ? defectReasonText(defectSummary) : QStringLiteral("无缺陷");
+    QStringList reasons;
+    if (!matched) {
+        reasons.append(QStringLiteral("字符不匹配"));
+    }
+    if (hasDefect) {
+        reasons.append(defectCategory);
+    }
+    updateSlotResult(slotIndex,
+                     finalGood ? QStringLiteral("良品") : QStringLiteral("次品"),
+                     chipTemplate,
+                     matched ? QStringLiteral("匹配") : QStringLiteral("不匹配"),
+                     defectCategory,
+                     finalGood ? QStringLiteral("--") : reasons.join(QStringLiteral("；")));
+
+    if (shouldLogMismatch) {
+        appendAlarmLog(QStringLiteral("字符匹配错误"), QStringLiteral("字符不匹配"));
+    }
+    if (shouldLogDefect) {
+        appendAlarmLog(QStringLiteral("缺陷报警"), defectCategory);
+    }
+}
+
+void MainWindow::appendAlarmLog(const QString &eventType, const QString &detail)
+{
+    writeHmiAlarmLog(eventType, detail);
+}
+
+void MainWindow::refreshInspectionStatus()
+{
+    if (m_templateLabel) {
+        m_templateLabel->setText(QStringLiteral("当前芯片模板：%1").arg(valueOrDash(m_currentTemplate)));
+    }
+    if (m_templateVersionLabel) {
+        m_templateVersionLabel->setText(QStringLiteral("模板版本：字符模糊匹配 / 最多缺 3 字"));
+    }
+    if (m_runningStatusLabel) {
+        m_runningStatusLabel->setText(m_inspectionActive
+            ? QStringLiteral("系统运行状态：检测中")
+            : QStringLiteral("系统运行状态：待机"));
+    }
 }
 
 void MainWindow::applyTheme()
@@ -1365,6 +1613,7 @@ void MainWindow::applyTheme()
             font-size: %8px;
         }
         QLabel#headerTitle { font-size: %9px; font-weight: 700; color: %2; }
+        QLabel#headerTime { font-size: %12px; font-weight: 700; color: %10; }
         QLabel#headerSubtitle, QLabel#secondaryText, QLabel.secondaryText { color: %11; font-size: %3px; }
         QLabel#cardTitle { font-size: %12px; font-weight: 700; color: %2; }
         QLabel#metricTitle, QLabel#miniText, QLabel#ruleText, QLabel#fieldLabel { color: %11; font-size: %13px; }
@@ -1451,10 +1700,7 @@ void MainWindow::updateScale()
 
     m_canvas->setFixedSize(qRound(DesignWidth * m_scale), qRound(DesignHeight * m_scale));
     if (m_header) {
-        m_header->setFixedHeight(px(60));
-    }
-    if (m_sidebar) {
-        m_sidebar->setFixedWidth(px(160));
+        m_header->setFixedHeight(px(48));
     }
     if (m_rightPanel) {
         m_rightPanel->setFixedWidth(px(280));
@@ -1485,18 +1731,6 @@ QLabel *MainWindow::createLabel(const QString &text, const QString &objectName, 
     }
     label->setTextInteractionFlags(Qt::NoTextInteraction);
     return label;
-}
-
-QPushButton *MainWindow::createMenuButton(const QString &text, bool selected, bool warning)
-{
-    QPushButton *button = new QPushButton(text, m_canvas);
-    button->setProperty("selected", selected ? "true" : "false");
-    if (warning) {
-        button->setProperty("warning", "true");
-    }
-    button->setCursor(Qt::PointingHandCursor);
-    button->setMinimumHeight(px(32));
-    return button;
 }
 
 QPushButton *MainWindow::createCommandButton(const QString &text, const QString &kind)
@@ -1573,6 +1807,12 @@ QFrame *MainWindow::createSlotCard(int slotIndex)
     widgets.textLabel = createLabel(QStringLiteral("字符匹配结果：--"), QStringLiteral("miniText"), card);
     widgets.defectLabel = createLabel(QStringLiteral("缺陷检测结果：--"), QStringLiteral("miniText"), card);
     widgets.reasonLabel = createLabel(QStringLiteral("次品原因：--"), QStringLiteral("miniText"), card);
+
+    for (QLabel *label : {widgets.modelLabel, widgets.textLabel, widgets.defectLabel, widgets.reasonLabel}) {
+        label->setWordWrap(true);
+        label->setFixedHeight(px(28));
+        label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    }
 
     layout->addWidget(widgets.slotLabel);
     layout->addWidget(widgets.statusLabel);
@@ -1692,7 +1932,7 @@ void MainWindow::setMatchModeOptions(const QStringList &modes)
     const QSignalBlocker blocker(m_matchModeCombo);
     m_matchModeCombo->clear();
     if (modes.isEmpty()) {
-        m_matchModeCombo->addItem(QStringLiteral("等待匹配方式"));
+        m_matchModeCombo->addItem(QStringLiteral("模糊匹配（最多缺3字）"));
     } else {
         m_matchModeCombo->addItems(modes);
     }
@@ -1700,33 +1940,47 @@ void MainWindow::setMatchModeOptions(const QStringList &modes)
 
 void MainWindow::updateDeviceStatus(const DeviceStatus &status)
 {
-    m_plcStatusLabel->setText(status.plcConnected ? QStringLiteral("PLC：已连接") : QStringLiteral("PLC：未连接"));
-    m_plcStatusLabel->setProperty("state", status.plcConnected ? "ok" : "bad");
-    m_camera1StatusLabel->setText(status.camera1Online ? QStringLiteral("相机 1：在线") : QStringLiteral("相机 1：离线"));
-    m_camera1StatusLabel->setProperty("state", status.camera1Online ? "cyan" : "bad");
-    m_camera2StatusLabel->setText(status.camera2Online ? QStringLiteral("相机 2：在线") : QStringLiteral("相机 2：离线"));
-    m_camera2StatusLabel->setProperty("state", status.camera2Online ? "cyan" : "bad");
-    m_shiftLabel->setText(QStringLiteral("班次：%1").arg(valueOrDash(status.shiftName)));
-    m_shiftLabel->setProperty("state", status.shiftName.isEmpty() ? "warn" : "blue");
+    if (m_plcStatusLabel) {
+        m_plcStatusLabel->setText(status.plcConnected ? QStringLiteral("PLC：已连接") : QStringLiteral("PLC：未连接"));
+        m_plcStatusLabel->setProperty("state", status.plcConnected ? "ok" : "bad");
+        polish(m_plcStatusLabel);
+    }
+    if (m_camera1StatusLabel) {
+        m_camera1StatusLabel->setText(status.camera1Online ? QStringLiteral("相机 1：在线") : QStringLiteral("相机 1：离线"));
+        m_camera1StatusLabel->setProperty("state", status.camera1Online ? "cyan" : "bad");
+        polish(m_camera1StatusLabel);
+    }
+    if (m_camera2StatusLabel) {
+        m_camera2StatusLabel->setText(status.camera2Online ? QStringLiteral("相机 2：在线") : QStringLiteral("相机 2：离线"));
+        m_camera2StatusLabel->setProperty("state", status.camera2Online ? "cyan" : "bad");
+        polish(m_camera2StatusLabel);
+    }
+    if (m_shiftLabel) {
+        m_shiftLabel->setText(QStringLiteral("班次：%1").arg(valueOrDash(status.shiftName)));
+        m_shiftLabel->setProperty("state", status.shiftName.isEmpty() ? "warn" : "blue");
+        polish(m_shiftLabel);
+    }
     if (m_camera1Preview) {
         m_camera1Preview->setOnline(status.camera1Online);
     }
     if (m_camera2Preview) {
         m_camera2Preview->setOnline(status.camera2Online);
     }
-    polish(m_plcStatusLabel);
-    polish(m_camera1StatusLabel);
-    polish(m_camera2StatusLabel);
-    polish(m_shiftLabel);
 }
 
 void MainWindow::updateSystemStatus(const SystemStatus &status)
 {
     setStatusLabel(m_visionModelLabel, QStringLiteral("视觉检测模型"), status.visionModelLoaded);
     setStatusLabel(m_ocrModelLabel, QStringLiteral("字符识别模型"), status.ocrModelLoaded);
-    m_templateLabel->setText(QStringLiteral("当前芯片模板：%1").arg(valueOrDash(status.chipTemplate)));
-    m_templateVersionLabel->setText(QStringLiteral("模板版本：%1").arg(valueOrDash(status.templateVersion)));
-    m_runningStatusLabel->setText(QStringLiteral("系统运行状态：%1").arg(valueOrDash(status.runningStatus)));
+    if (m_templateLabel) {
+        m_templateLabel->setText(QStringLiteral("当前芯片模板：%1").arg(valueOrDash(status.chipTemplate)));
+    }
+    if (m_templateVersionLabel) {
+        m_templateVersionLabel->setText(QStringLiteral("模板版本：%1").arg(valueOrDash(status.templateVersion)));
+    }
+    if (m_runningStatusLabel) {
+        m_runningStatusLabel->setText(QStringLiteral("系统运行状态：%1").arg(valueOrDash(status.runningStatus)));
+    }
 }
 
 void MainWindow::updateKpiData(const KpiData &data)
@@ -1754,10 +2008,10 @@ void MainWindow::updateSlotResult(const SlotResult &result)
     slot.card->setProperty("slotState", state);
     slot.statusLabel->setText(QStringLiteral("状态：%1").arg(valueOrDash(result.status)));
     slot.statusLabel->setProperty("color", state);
-    slot.modelLabel->setText(QStringLiteral("芯片型号：%1").arg(valueOrDash(result.chipModel)));
-    slot.textLabel->setText(QStringLiteral("字符匹配结果：%1").arg(valueOrDash(result.textResult)));
-    slot.defectLabel->setText(QStringLiteral("缺陷检测结果：%1").arg(valueOrDash(result.defectResult)));
-    slot.reasonLabel->setText(QStringLiteral("次品原因：%1").arg(valueOrDash(result.reason)));
+    slot.modelLabel->setText(QStringLiteral("芯片型号：%1").arg(wrapSlotValue(valueOrDash(result.chipModel))));
+    slot.textLabel->setText(QStringLiteral("字符匹配结果：%1").arg(wrapSlotValue(valueOrDash(result.textResult))));
+    slot.defectLabel->setText(QStringLiteral("缺陷检测结果：%1").arg(wrapSlotValue(valueOrDash(result.defectResult))));
+    slot.reasonLabel->setText(QStringLiteral("次品原因：%1").arg(wrapSlotValue(valueOrDash(result.reason))));
     polish(slot.card);
     polish(slot.statusLabel);
 }
