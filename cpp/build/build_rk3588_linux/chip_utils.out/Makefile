@@ -217,6 +217,62 @@ audioutils/fast:
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/build
 .PHONY : audioutils/fast
 
+# Convenience name for target.
+chip_utils.out/CMakeFiles/fileutils_autogen.dir/rule:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chip_utils.out/CMakeFiles/fileutils_autogen.dir/rule
+.PHONY : chip_utils.out/CMakeFiles/fileutils_autogen.dir/rule
+
+# Convenience name for target.
+fileutils_autogen: chip_utils.out/CMakeFiles/fileutils_autogen.dir/rule
+.PHONY : fileutils_autogen
+
+# fast build rule for target.
+fileutils_autogen/fast:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils_autogen.dir/build.make chip_utils.out/CMakeFiles/fileutils_autogen.dir/build
+.PHONY : fileutils_autogen/fast
+
+# Convenience name for target.
+chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/rule:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/rule
+.PHONY : chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/rule
+
+# Convenience name for target.
+imagedrawing_autogen: chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/rule
+.PHONY : imagedrawing_autogen
+
+# fast build rule for target.
+imagedrawing_autogen/fast:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/build.make chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/build
+.PHONY : imagedrawing_autogen/fast
+
+# Convenience name for target.
+chip_utils.out/CMakeFiles/imageutils_autogen.dir/rule:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chip_utils.out/CMakeFiles/imageutils_autogen.dir/rule
+.PHONY : chip_utils.out/CMakeFiles/imageutils_autogen.dir/rule
+
+# Convenience name for target.
+imageutils_autogen: chip_utils.out/CMakeFiles/imageutils_autogen.dir/rule
+.PHONY : imageutils_autogen
+
+# fast build rule for target.
+imageutils_autogen/fast:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils_autogen.dir/build.make chip_utils.out/CMakeFiles/imageutils_autogen.dir/build
+.PHONY : imageutils_autogen/fast
+
+# Convenience name for target.
+chip_utils.out/CMakeFiles/audioutils_autogen.dir/rule:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chip_utils.out/CMakeFiles/audioutils_autogen.dir/rule
+.PHONY : chip_utils.out/CMakeFiles/audioutils_autogen.dir/rule
+
+# Convenience name for target.
+audioutils_autogen: chip_utils.out/CMakeFiles/audioutils_autogen.dir/rule
+.PHONY : audioutils_autogen
+
+# fast build rule for target.
+audioutils_autogen/fast:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils_autogen.dir/build.make chip_utils.out/CMakeFiles/audioutils_autogen.dir/build
+.PHONY : audioutils_autogen/fast
+
 audio_utils.o: audio_utils.c.o
 .PHONY : audio_utils.o
 
@@ -241,6 +297,30 @@ audio_utils.c.s:
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/audio_utils.c.s
 .PHONY : audio_utils.c.s
 
+audioutils_autogen/mocs_compilation.o: audioutils_autogen/mocs_compilation.cpp.o
+.PHONY : audioutils_autogen/mocs_compilation.o
+
+# target to build an object file
+audioutils_autogen/mocs_compilation.cpp.o:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/audioutils_autogen/mocs_compilation.cpp.o
+.PHONY : audioutils_autogen/mocs_compilation.cpp.o
+
+audioutils_autogen/mocs_compilation.i: audioutils_autogen/mocs_compilation.cpp.i
+.PHONY : audioutils_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+audioutils_autogen/mocs_compilation.cpp.i:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/audioutils_autogen/mocs_compilation.cpp.i
+.PHONY : audioutils_autogen/mocs_compilation.cpp.i
+
+audioutils_autogen/mocs_compilation.s: audioutils_autogen/mocs_compilation.cpp.s
+.PHONY : audioutils_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+audioutils_autogen/mocs_compilation.cpp.s:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/audioutils_autogen/mocs_compilation.cpp.s
+.PHONY : audioutils_autogen/mocs_compilation.cpp.s
+
 file_utils.o: file_utils.c.o
 .PHONY : file_utils.o
 
@@ -264,6 +344,30 @@ file_utils.s: file_utils.c.s
 file_utils.c.s:
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils.dir/build.make chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.s
 .PHONY : file_utils.c.s
+
+fileutils_autogen/mocs_compilation.o: fileutils_autogen/mocs_compilation.cpp.o
+.PHONY : fileutils_autogen/mocs_compilation.o
+
+# target to build an object file
+fileutils_autogen/mocs_compilation.cpp.o:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils.dir/build.make chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o
+.PHONY : fileutils_autogen/mocs_compilation.cpp.o
+
+fileutils_autogen/mocs_compilation.i: fileutils_autogen/mocs_compilation.cpp.i
+.PHONY : fileutils_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+fileutils_autogen/mocs_compilation.cpp.i:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils.dir/build.make chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.i
+.PHONY : fileutils_autogen/mocs_compilation.cpp.i
+
+fileutils_autogen/mocs_compilation.s: fileutils_autogen/mocs_compilation.cpp.s
+.PHONY : fileutils_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+fileutils_autogen/mocs_compilation.cpp.s:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils.dir/build.make chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.s
+.PHONY : fileutils_autogen/mocs_compilation.cpp.s
 
 image_drawing.o: image_drawing.c.o
 .PHONY : image_drawing.o
@@ -313,6 +417,54 @@ image_utils.c.s:
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils.dir/build.make chip_utils.out/CMakeFiles/imageutils.dir/image_utils.c.s
 .PHONY : image_utils.c.s
 
+imagedrawing_autogen/mocs_compilation.o: imagedrawing_autogen/mocs_compilation.cpp.o
+.PHONY : imagedrawing_autogen/mocs_compilation.o
+
+# target to build an object file
+imagedrawing_autogen/mocs_compilation.cpp.o:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imagedrawing.dir/build.make chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o
+.PHONY : imagedrawing_autogen/mocs_compilation.cpp.o
+
+imagedrawing_autogen/mocs_compilation.i: imagedrawing_autogen/mocs_compilation.cpp.i
+.PHONY : imagedrawing_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+imagedrawing_autogen/mocs_compilation.cpp.i:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imagedrawing.dir/build.make chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.i
+.PHONY : imagedrawing_autogen/mocs_compilation.cpp.i
+
+imagedrawing_autogen/mocs_compilation.s: imagedrawing_autogen/mocs_compilation.cpp.s
+.PHONY : imagedrawing_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+imagedrawing_autogen/mocs_compilation.cpp.s:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imagedrawing.dir/build.make chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.s
+.PHONY : imagedrawing_autogen/mocs_compilation.cpp.s
+
+imageutils_autogen/mocs_compilation.o: imageutils_autogen/mocs_compilation.cpp.o
+.PHONY : imageutils_autogen/mocs_compilation.o
+
+# target to build an object file
+imageutils_autogen/mocs_compilation.cpp.o:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils.dir/build.make chip_utils.out/CMakeFiles/imageutils.dir/imageutils_autogen/mocs_compilation.cpp.o
+.PHONY : imageutils_autogen/mocs_compilation.cpp.o
+
+imageutils_autogen/mocs_compilation.i: imageutils_autogen/mocs_compilation.cpp.i
+.PHONY : imageutils_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+imageutils_autogen/mocs_compilation.cpp.i:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils.dir/build.make chip_utils.out/CMakeFiles/imageutils.dir/imageutils_autogen/mocs_compilation.cpp.i
+.PHONY : imageutils_autogen/mocs_compilation.cpp.i
+
+imageutils_autogen/mocs_compilation.s: imageutils_autogen/mocs_compilation.cpp.s
+.PHONY : imageutils_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+imageutils_autogen/mocs_compilation.cpp.s:
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux && $(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils.dir/build.make chip_utils.out/CMakeFiles/imageutils.dir/imageutils_autogen/mocs_compilation.cpp.s
+.PHONY : imageutils_autogen/mocs_compilation.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -325,6 +477,10 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... audioutils_autogen"
+	@echo "... fileutils_autogen"
+	@echo "... imagedrawing_autogen"
+	@echo "... imageutils_autogen"
 	@echo "... audioutils"
 	@echo "... fileutils"
 	@echo "... imagedrawing"
@@ -332,15 +488,27 @@ help:
 	@echo "... audio_utils.o"
 	@echo "... audio_utils.i"
 	@echo "... audio_utils.s"
+	@echo "... audioutils_autogen/mocs_compilation.o"
+	@echo "... audioutils_autogen/mocs_compilation.i"
+	@echo "... audioutils_autogen/mocs_compilation.s"
 	@echo "... file_utils.o"
 	@echo "... file_utils.i"
 	@echo "... file_utils.s"
+	@echo "... fileutils_autogen/mocs_compilation.o"
+	@echo "... fileutils_autogen/mocs_compilation.i"
+	@echo "... fileutils_autogen/mocs_compilation.s"
 	@echo "... image_drawing.o"
 	@echo "... image_drawing.i"
 	@echo "... image_drawing.s"
 	@echo "... image_utils.o"
 	@echo "... image_utils.i"
 	@echo "... image_utils.s"
+	@echo "... imagedrawing_autogen/mocs_compilation.o"
+	@echo "... imagedrawing_autogen/mocs_compilation.i"
+	@echo "... imagedrawing_autogen/mocs_compilation.s"
+	@echo "... imageutils_autogen/mocs_compilation.o"
+	@echo "... imageutils_autogen/mocs_compilation.i"
+	@echo "... imageutils_autogen/mocs_compilation.s"
 .PHONY : help
 
 

@@ -1,9 +1,13 @@
 #ifndef HMI_MAINWINDOW_H
 #define HMI_MAINWINDOW_H
 
+#include "serial_port.h"
+#include "cloud_uploader.h"
+
 #include <QImage>
 #include <QMainWindow>
 #include <QRectF>
+#include <QSqlDatabase>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -11,6 +15,7 @@
 #include <atomic>
 #include <chrono>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <thread>
 
@@ -30,6 +35,16 @@ class QVBoxLayout;
 class QWidget;
 
 class HmiOcrDetector;
+
+struct HmiRuntimeOptions {
+    QString serialPort = QStringLiteral("/dev/ttyS9");
+    int serialBaudrate = 115200;
+    QString arrivalCommand = QStringLiteral("DONE");
+    QString moveCommand = QStringLiteral("MOVE_NEXT\n");
+    QString employeeDatabasePath = QStringLiteral("employee_host.db");
+    QString cloudUploadConfigPath = QStringLiteral("config/cloud_upload.ini");
+    int chipSlots = 4;
+};
 
 struct DeviceStatus {
     bool plcConnected = false;
@@ -78,6 +93,20 @@ struct EmployeeStatus {
     QString suggestedAction;
 };
 
+struct HmiEmployeeItem {
+    uint32_t id = 0;
+    QString name;
+};
+
+struct HmiAttendanceRecord {
+    int recordId = 0;
+    uint32_t employeeId = 0;
+    QString name;
+    qint64 checkinTime = 0;
+    qint64 checkoutTime = 0;
+    qint64 durationSec = 0;
+};
+
 class CameraPreviewWidget : public QWidget {
     Q_OBJECT
 
@@ -100,6 +129,7 @@ public:
     void setOnline(bool online);
     void setMessage(const QString &message);
     void setFatigueText(const QString &text);
+    void setFatigueAlarmCallback(std::function<void(const QString&, int)> callback);
     bool latestGrayFrame(cv::Mat &gray) const;
     bool hasActiveDetections() const;
     QString latestDetectionSummary() const;
@@ -172,6 +202,7 @@ private:
     std::deque<FatigueSample> m_fatigueSamples;
     std::deque<std::chrono::steady_clock::time_point> m_closedEyeEvents;
     std::deque<std::chrono::steady_clock::time_point> m_yawnEvents;
+    std::function<void(const QString&, int)> m_fatigueAlarmCallback;
     bool m_currentClosed = false;
     bool m_currentMouthOpen = false;
     bool m_currentFatigue = false;
@@ -187,7 +218,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(const HmiRuntimeOptions &options = HmiRuntimeOptions(), QWidget *parent = nullptr);
     ~MainWindow() override;
 
     void setTemplateOptions(const QStringList &templates);
@@ -235,6 +266,14 @@ private slots:
     void refreshClock();
     void showEmployeeDialog();
     void confirmInspectionTemplate();
+    void requestMotorForward();
+    void requestMotorBack();
+    void requestMotorAutoRun();
+    void requestEmployeeEnroll();
+    void requestEmployeeCheckin();
+    void requestEmployeeCheckout();
+    void requestEmployeeDelete();
+    void onEmployeeOperationTimeout();
 
 private:
     QWidget *buildHeader();
@@ -262,6 +301,25 @@ private:
     void updateRecordTable(QGridLayout *grid, const QStringList &headers, const QVector<QStringList> &rows);
     void setDialogPage(int index, const QVector<QWidget *> &pages, const QVector<QPushButton *> &tabs);
     void refreshEmployeeDialog();
+    void refreshEmployeeRecords();
+    bool openEmployeeDatabase();
+    bool initializeEmployeeDatabase();
+    QString employeeDatabaseError() const;
+    bool addEmployeeToDatabase(uint32_t employeeId, const QString &name, qint64 createdAt);
+    bool employeeNameFromDatabase(uint32_t employeeId, QString &name) const;
+    QVector<HmiEmployeeItem> employeesFromDatabase() const;
+    QVector<HmiEmployeeItem> employeesOnDuty() const;
+    bool deleteEmployeeFromDatabase(uint32_t employeeId);
+    bool addEmployeeCheckin(uint32_t employeeId, qint64 checkinTime);
+    bool finishEmployeeCheckout(uint32_t employeeId, qint64 checkoutTime, qint64 durationSec);
+    QVector<HmiAttendanceRecord> employeeAttendanceRecords() const;
+    bool sendEmployeeFrame(uint8_t command, const QByteArray &payload);
+    void handleEmployeeFrame(uint8_t command, const QByteArray &payload);
+    void setEmployeeWaiting(bool waiting, const QString &text);
+    void completeEmployeeOperation(const QString &text);
+    void failEmployeeOperation(const QString &title, const QString &text);
+    void refreshEmployeeCheckoutList();
+    void refreshEmployeeDeleteList();
     void setStatusLabel(QLabel *label, const QString &prefix, bool ok);
     void polish(QWidget *widget);
     QString valueOrDash(const QString &value) const;
@@ -270,6 +328,13 @@ private:
     void startOcrThread();
     void stopOcrThread();
     void ocrLoop();
+    void startSerialThread();
+    void stopSerialThread();
+    void serialLoop();
+    bool consumeArrivalRequest();
+    bool sendMotorCommand(uint8_t command, const QString &label);
+    void sendMoveCommand();
+    void setSerialStatus(bool online, const QString &detail);
     void handleOcrResult(const QString &rawText,
                          const QString &normalizedText,
                          float bestScore,
@@ -319,6 +384,15 @@ private:
     double m_scale = 1.0;
     std::atomic<bool> m_ocrRunning{false};
     std::thread m_ocrThread;
+    HmiRuntimeOptions m_options;
+    SerialPort m_serial;
+    std::atomic<bool> m_serialRunning{false};
+    std::atomic<bool> m_serialOnline{false};
+    std::atomic<uint64_t> m_arrivalRequests{0};
+    std::atomic<int> m_pendingMotorCommand{0};
+    std::atomic<int> m_completedForwardMoves{0};
+    std::thread m_serialThread;
+    CloudUploader m_cloudUploader;
     std::mutex m_inspectionMutex;
     bool m_inspectionActive = false;
     QString m_currentTemplate;
@@ -336,6 +410,18 @@ private:
     QDialog *m_employeeDialog = nullptr;
     QVector<QWidget *> m_employeePages;
     QVector<QPushButton *> m_employeeTabs;
+    QLineEdit *m_employeeIdEdit = nullptr;
+    QLineEdit *m_employeeNameEdit = nullptr;
+    QPushButton *m_employeeEnrollButton = nullptr;
+    QPushButton *m_employeeCheckinButton = nullptr;
+    QPushButton *m_employeeCheckoutButton = nullptr;
+    QPushButton *m_employeeDeleteButton = nullptr;
+    QComboBox *m_employeeCheckoutCombo = nullptr;
+    QComboBox *m_employeeDeleteCombo = nullptr;
+    QLabel *m_employeeEnrollStatusLabel = nullptr;
+    QLabel *m_employeeCheckinStatusLabel = nullptr;
+    QLabel *m_employeeCheckoutStatusLabel = nullptr;
+    QLabel *m_employeeDeleteStatusLabel = nullptr;
     QLabel *m_empNameLabel = nullptr;
     QLabel *m_empIdLabel = nullptr;
     QLabel *m_empSignLabel = nullptr;
@@ -351,10 +437,26 @@ private:
     QLabel *m_empSuggestedActionLabel = nullptr;
     QGridLayout *m_leaveRecordGrid = nullptr;
     QGridLayout *m_fatigueRecordGrid = nullptr;
+    QGridLayout *m_employeeRecordGrid = nullptr;
+    QTimer *m_employeeOperationTimer = nullptr;
+
+    enum class EmployeeOperation {
+        None,
+        Enroll,
+        Checkin,
+        Checkout
+    };
+    EmployeeOperation m_employeeOperation = EmployeeOperation::None;
+    uint32_t m_pendingEmployeeId = 0;
+    QString m_pendingEmployeeName;
+    QSqlDatabase m_employeeDb;
+    QString m_employeeDbConnectionName;
+    QString m_employeeDbLastError;
 
     EmployeeStatus m_employeeStatus;
     QVector<QStringList> m_leaveRecords;
     QVector<QStringList> m_fatigueRecords;
+    QVector<QStringList> m_employeeRecords;
 };
 
 #endif // HMI_MAINWINDOW_H

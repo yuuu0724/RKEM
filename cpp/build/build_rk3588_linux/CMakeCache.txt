@@ -14,6 +14,9 @@
 # EXTERNAL cache entries
 ########################
 
+//Build Qt Widgets HMI
+BUILD_QT_HMI:BOOL=ON
+
 //chip demo root
 CHIP_ROOT:PATH=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../../chip
 
@@ -223,6 +226,24 @@ ENABLE_DMA32:UNINITIALIZED=OFF
 
 //The directory containing a CMake configuration file for OpenCV.
 OpenCV_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/opencv4
+
+//The directory containing a CMake configuration file for QT.
+QT_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5
+
+//The directory containing a CMake configuration file for Qt5Core.
+Qt5Core_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5Core
+
+//The directory containing a CMake configuration file for Qt5Gui.
+Qt5Gui_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5Gui
+
+//The directory containing a CMake configuration file for Qt5Sql.
+Qt5Sql_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5Sql
+
+//The directory containing a CMake configuration file for Qt5Widgets.
+Qt5Widgets_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5Widgets
+
+//The directory containing a CMake configuration file for Qt5.
+Qt5_DIR:PATH=/usr/lib/aarch64-linux-gnu/cmake/Qt5
 
 //No help, variable specified on the command line.
 TARGET_SOC:UNINITIALIZED=rk3588

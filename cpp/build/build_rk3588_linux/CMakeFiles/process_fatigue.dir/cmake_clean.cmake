@@ -1,4 +1,11 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/process_fatigue_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/process_fatigue_autogen.dir/ParseCache.txt"
+  "process_fatigue_autogen"
+  "CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.o"
+  "CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.o.d"
+  "CMakeFiles/process_fatigue.dir/src/audio_alert.cc.o"
+  "CMakeFiles/process_fatigue.dir/src/audio_alert.cc.o.d"
   "CMakeFiles/process_fatigue.dir/src/camera.cc.o"
   "CMakeFiles/process_fatigue.dir/src/camera.cc.o.d"
   "CMakeFiles/process_fatigue.dir/src/fatigue_engine.cc.o"

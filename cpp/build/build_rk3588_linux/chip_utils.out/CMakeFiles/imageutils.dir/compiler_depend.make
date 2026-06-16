@@ -115,6 +115,11 @@ chip_utils.out/CMakeFiles/imageutils.dir/image_utils.c.o: /userdata/sdcard/works
   /userdata/sdcard/workspace/proj/chip/utils/file_utils.h \
   /userdata/sdcard/workspace/proj/chip/3rdparty/jpeg_turbo/include/turbojpeg.h
 
+chip_utils.out/CMakeFiles/imageutils.dir/imageutils_autogen/mocs_compilation.cpp.o: chip_utils.out/imageutils_autogen/mocs_compilation.cpp \
+  /usr/include/stdc-predef.h
+
+
+chip_utils.out/imageutils_autogen/mocs_compilation.cpp:
 
 /userdata/sdcard/workspace/proj/chip/utils/common.h:
 

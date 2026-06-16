@@ -69,10 +69,24 @@ include CMakeFiles/two_model_camera_demo.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/two_model_camera_demo.dir/flags.make
 
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o: CMakeFiles/two_model_camera_demo.dir/flags.make
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o: two_model_camera_demo_autogen/mocs_compilation.cpp
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o: CMakeFiles/two_model_camera_demo.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o -MF CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/two_model_camera_demo_autogen/mocs_compilation.cpp
+
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.i"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/two_model_camera_demo_autogen/mocs_compilation.cpp > CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.i
+
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.s"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/two_model_camera_demo_autogen/mocs_compilation.cpp -o CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.s
+
 CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o: CMakeFiles/two_model_camera_demo.dir/flags.make
 CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o: ../../src/two_model_camera_demo.cc
 CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o: CMakeFiles/two_model_camera_demo.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o -MF CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o.d -o CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/two_model_camera_demo.cc
 
 CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.i: cmake_force
@@ -85,11 +99,13 @@ CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.s: cmake_force
 
 # Object files for target two_model_camera_demo
 two_model_camera_demo_OBJECTS = \
+"CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o"
 
 # External object files for target two_model_camera_demo
 two_model_camera_demo_EXTERNAL_OBJECTS =
 
+two_model_camera_demo: CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o
 two_model_camera_demo: CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o
 two_model_camera_demo: CMakeFiles/two_model_camera_demo.dir/build.make
 two_model_camera_demo: /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.5.4d
@@ -147,7 +163,7 @@ two_model_camera_demo: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.5.4d
 two_model_camera_demo: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d
 two_model_camera_demo: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d
 two_model_camera_demo: CMakeFiles/two_model_camera_demo.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable two_model_camera_demo"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable two_model_camera_demo"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/two_model_camera_demo.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

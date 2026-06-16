@@ -69,10 +69,24 @@ include CMakeFiles/process_ocr.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/process_ocr.dir/flags.make
 
+CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o: CMakeFiles/process_ocr.dir/flags.make
+CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o: process_ocr_autogen/mocs_compilation.cpp
+CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o -MF CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_ocr_autogen/mocs_compilation.cpp
+
+CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.i"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_ocr_autogen/mocs_compilation.cpp > CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.i
+
+CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.s"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_ocr_autogen/mocs_compilation.cpp -o CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.s
+
 CMakeFiles/process_ocr.dir/src/process_ocr.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/process_ocr.cc.o: ../../src/process_ocr.cc
 CMakeFiles/process_ocr.dir/src/process_ocr.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/process_ocr.dir/src/process_ocr.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/process_ocr.dir/src/process_ocr.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/process_ocr.cc.o -MF CMakeFiles/process_ocr.dir/src/process_ocr.cc.o.d -o CMakeFiles/process_ocr.dir/src/process_ocr.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/process_ocr.cc
 
 CMakeFiles/process_ocr.dir/src/process_ocr.cc.i: cmake_force
@@ -86,7 +100,7 @@ CMakeFiles/process_ocr.dir/src/process_ocr.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/logger.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/logger.cc.o: ../../src/logger.cc
 CMakeFiles/process_ocr.dir/src/logger.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/process_ocr.dir/src/logger.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/process_ocr.dir/src/logger.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/logger.cc.o -MF CMakeFiles/process_ocr.dir/src/logger.cc.o.d -o CMakeFiles/process_ocr.dir/src/logger.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/logger.cc
 
 CMakeFiles/process_ocr.dir/src/logger.cc.i: cmake_force
@@ -100,7 +114,7 @@ CMakeFiles/process_ocr.dir/src/logger.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/thread_pool.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/thread_pool.cc.o: ../../src/thread_pool.cc
 CMakeFiles/process_ocr.dir/src/thread_pool.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/process_ocr.dir/src/thread_pool.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/process_ocr.dir/src/thread_pool.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/thread_pool.cc.o -MF CMakeFiles/process_ocr.dir/src/thread_pool.cc.o.d -o CMakeFiles/process_ocr.dir/src/thread_pool.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/thread_pool.cc
 
 CMakeFiles/process_ocr.dir/src/thread_pool.cc.i: cmake_force
@@ -114,7 +128,7 @@ CMakeFiles/process_ocr.dir/src/thread_pool.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o: ../../src/ipc_manager.cc
 CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o -MF CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o.d -o CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc
 
 CMakeFiles/process_ocr.dir/src/ipc_manager.cc.i: cmake_force
@@ -128,7 +142,7 @@ CMakeFiles/process_ocr.dir/src/ipc_manager.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/camera.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/camera.cc.o: ../../src/camera.cc
 CMakeFiles/process_ocr.dir/src/camera.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/process_ocr.dir/src/camera.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/process_ocr.dir/src/camera.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/camera.cc.o -MF CMakeFiles/process_ocr.dir/src/camera.cc.o.d -o CMakeFiles/process_ocr.dir/src/camera.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/camera.cc
 
 CMakeFiles/process_ocr.dir/src/camera.cc.i: cmake_force
@@ -142,7 +156,7 @@ CMakeFiles/process_ocr.dir/src/camera.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/model_engine.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/model_engine.cc.o: ../../src/model_engine.cc
 CMakeFiles/process_ocr.dir/src/model_engine.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/process_ocr.dir/src/model_engine.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/process_ocr.dir/src/model_engine.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/model_engine.cc.o -MF CMakeFiles/process_ocr.dir/src/model_engine.cc.o.d -o CMakeFiles/process_ocr.dir/src/model_engine.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/model_engine.cc
 
 CMakeFiles/process_ocr.dir/src/model_engine.cc.i: cmake_force
@@ -156,7 +170,7 @@ CMakeFiles/process_ocr.dir/src/model_engine.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/serial_port.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/serial_port.cc.o: ../../src/serial_port.cc
 CMakeFiles/process_ocr.dir/src/serial_port.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/process_ocr.dir/src/serial_port.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/process_ocr.dir/src/serial_port.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/serial_port.cc.o -MF CMakeFiles/process_ocr.dir/src/serial_port.cc.o.d -o CMakeFiles/process_ocr.dir/src/serial_port.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc
 
 CMakeFiles/process_ocr.dir/src/serial_port.cc.i: cmake_force
@@ -170,7 +184,7 @@ CMakeFiles/process_ocr.dir/src/serial_port.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/qt_interface.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/qt_interface.cc.o: ../../src/qt_interface.cc
 CMakeFiles/process_ocr.dir/src/qt_interface.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/process_ocr.dir/src/qt_interface.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/process_ocr.dir/src/qt_interface.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/qt_interface.cc.o -MF CMakeFiles/process_ocr.dir/src/qt_interface.cc.o.d -o CMakeFiles/process_ocr.dir/src/qt_interface.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/qt_interface.cc
 
 CMakeFiles/process_ocr.dir/src/qt_interface.cc.i: cmake_force
@@ -184,7 +198,7 @@ CMakeFiles/process_ocr.dir/src/qt_interface.cc.s: cmake_force
 CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o: CMakeFiles/process_ocr.dir/flags.make
 CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o: ../../src/ocr_engine.cc
 CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o: CMakeFiles/process_ocr.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o -MF CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o.d -o CMakeFiles/process_ocr.dir/src/ocr_engine.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ocr_engine.cc
 
 CMakeFiles/process_ocr.dir/src/ocr_engine.cc.i: cmake_force
@@ -197,6 +211,7 @@ CMakeFiles/process_ocr.dir/src/ocr_engine.cc.s: cmake_force
 
 # Object files for target process_ocr
 process_ocr_OBJECTS = \
+"CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/process_ocr.dir/src/process_ocr.cc.o" \
 "CMakeFiles/process_ocr.dir/src/logger.cc.o" \
 "CMakeFiles/process_ocr.dir/src/thread_pool.cc.o" \
@@ -210,6 +225,7 @@ process_ocr_OBJECTS = \
 # External object files for target process_ocr
 process_ocr_EXTERNAL_OBJECTS =
 
+process_ocr: CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o
 process_ocr: CMakeFiles/process_ocr.dir/src/process_ocr.cc.o
 process_ocr: CMakeFiles/process_ocr.dir/src/logger.cc.o
 process_ocr: CMakeFiles/process_ocr.dir/src/thread_pool.cc.o
@@ -277,7 +293,7 @@ process_ocr: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.5.4d
 process_ocr: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d
 process_ocr: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d
 process_ocr: CMakeFiles/process_ocr.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable process_ocr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable process_ocr"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/process_ocr.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

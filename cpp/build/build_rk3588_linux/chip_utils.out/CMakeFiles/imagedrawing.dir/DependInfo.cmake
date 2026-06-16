@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/userdata/sdcard/workspace/proj/chip/utils/image_drawing.c" "chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o" "gcc" "chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp" "chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o" "gcc" "chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o.d"
   )
 
 # Targets to which this target links.

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/aarch64-linux-gnu-g++
 CXX_DEFINES = -DLIBRGA_IM2D_HANDLE
 
-CXX_INCLUDES = -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/allocator/dma -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/librga/include -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/include -isystem /usr/include/opencv4
+CXX_INCLUDES = -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service_autogen/include -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/allocator/dma -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/librga/include -I/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/include -isystem /usr/include/opencv4
 
-CXX_FLAGS =  -pthread -O3 -DNDEBUG
+CXX_FLAGS =  -pthread -O3 -DNDEBUG -std=gnu++17
 

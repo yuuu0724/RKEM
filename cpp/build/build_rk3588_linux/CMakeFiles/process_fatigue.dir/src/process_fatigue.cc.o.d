@@ -177,6 +177,7 @@ CMakeFiles/process_fatigue.dir/src/process_fatigue.cc.o: \
  /usr/include/c++/11/bits/algorithmfwd.h \
  /usr/include/c++/11/bits/stl_heap.h \
  /usr/include/c++/11/bits/uniform_int_dist.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/audio_alert.h \
  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/logger.h \
  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/common.h \
  /usr/include/c++/11/fstream /usr/include/c++/11/istream \

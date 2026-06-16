@@ -1,4 +1,7 @@
 #include "../../../chip/cpp/ppocrv5.h"
+#include "audio_alert.h"
+#include "cloud_uploader.h"
+#include "serial_port.h"
 
 #include <rknn_api.h>
 
@@ -33,8 +36,14 @@ static constexpr float kFatigueThreshold = 0.15f;
 static const char* kChipCameraDevice = "/dev/video21";
 static const char* kChipFramePath = "/tmp/integrated_inspection_video21.bgr";
 static constexpr uint64_t kOcrIntervalFrames = 3;
+static const char* kDefaultSerialPort = "/dev/ttyS9";
+static const char* kDefaultArrivalCommand = "DONE";
+static const char* kDefaultMoveCommand = "MOVE_NEXT\n";
+static const char* kDefaultCloudUploadConfig = "config/cloud_upload.ini";
+static constexpr int kDefaultChipSlots = 4;
 
 static std::atomic<bool> g_running(true);
+static std::atomic<uint64_t> g_chip_arrival_requests(0);
 
 struct FrameStore {
     std::mutex mutex;
@@ -178,6 +187,80 @@ static bool MatchModelName(const std::string& expected, const std::string& obser
     int lcs = LcsLength(expected, observed);
     int allowed_missing = expected.size() <= 4 ? 0 : 1;
     return (int)expected.size() - lcs <= allowed_missing;
+}
+
+static std::string TrimAscii(const std::string& text) {
+    size_t begin = 0;
+    while (begin < text.size() && std::isspace((unsigned char)text[begin])) {
+        begin++;
+    }
+    size_t end = text.size();
+    while (end > begin && std::isspace((unsigned char)text[end - 1])) {
+        end--;
+    }
+    return text.substr(begin, end - begin);
+}
+
+static std::string DecodeEscapedCommand(const std::string& text) {
+    std::string out;
+    out.reserve(text.size());
+    for (size_t i = 0; i < text.size(); ++i) {
+        if (text[i] != '\\' || i + 1 >= text.size()) {
+            out.push_back(text[i]);
+            continue;
+        }
+        char next = text[++i];
+        switch (next) {
+            case 'n': out.push_back('\n'); break;
+            case 'r': out.push_back('\r'); break;
+            case 't': out.push_back('\t'); break;
+            case '\\': out.push_back('\\'); break;
+            default:
+                out.push_back('\\');
+                out.push_back(next);
+                break;
+        }
+    }
+    return out;
+}
+
+static void ReplaceAll(std::string& value, const std::string& from, const std::string& to) {
+    if (from.empty()) {
+        return;
+    }
+    size_t pos = 0;
+    while ((pos = value.find(from, pos)) != std::string::npos) {
+        value.replace(pos, from.size(), to);
+        pos += to.size();
+    }
+}
+
+static std::string FormatMotorCommand(const std::string& command_template,
+                                      int current_slot,
+                                      int next_slot) {
+    std::string command = command_template;
+    ReplaceAll(command, "{current}", std::to_string(current_slot));
+    ReplaceAll(command, "{next}", std::to_string(next_slot));
+    return command;
+}
+
+static std::string PrintableSerialText(const std::string& text) {
+    std::string out;
+    out.reserve(text.size());
+    for (unsigned char ch : text) {
+        if (ch == '\n') {
+            out += "\\n";
+        } else if (ch == '\r') {
+            out += "\\r";
+        } else if (std::isprint(ch)) {
+            out.push_back((char)ch);
+        } else {
+            char buf[8];
+            std::snprintf(buf, sizeof(buf), "\\x%02X", ch);
+            out += buf;
+        }
+    }
+    return out;
 }
 
 static std::vector<std::string> LoadLabels(const std::string& path) {
@@ -1145,6 +1228,111 @@ static bool RunOcrOnFrame(ppocr_system_app_context* ctx, const std::string& expe
     return true;
 }
 
+static bool RunChipInspectionOnFrame(ppocr_system_app_context* ocr_ctx,
+                                     const std::string& expected_model,
+                                     YoloDetector* defect_detector,
+                                     const cv::Mat& gray,
+                                     OcrState& ocr,
+                                     DetectionState& defect) {
+    ocr = OcrState();
+    defect = DetectionState();
+
+    bool ocr_ok = RunOcrOnFrame(ocr_ctx, expected_model, gray, ocr);
+    if (!ocr_ok) {
+        ocr.ready = true;
+        ocr.model_ok = false;
+    }
+
+    bool defect_ok = false;
+    if (defect_detector) {
+        std::vector<Detection> detections;
+        defect_ok = defect_detector->Detect(gray, detections);
+        if (defect_ok) {
+            defect.ready = true;
+            defect.detections = detections;
+        }
+    }
+
+    return ocr_ok && defect_ok;
+}
+
+static bool SerialArrivalMatched(std::string& pending,
+                                 const std::string& arrival_command,
+                                 size_t& match_count) {
+    match_count = 0;
+    if (arrival_command.empty() || arrival_command == "ANY") {
+        size_t line_end = std::string::npos;
+        while ((line_end = pending.find_first_of("\r\n")) != std::string::npos) {
+            std::string line = TrimAscii(pending.substr(0, line_end));
+            pending.erase(0, line_end + 1);
+            if (!line.empty()) {
+                match_count++;
+            }
+        }
+        return match_count > 0;
+    }
+
+    size_t pos = std::string::npos;
+    while ((pos = pending.find(arrival_command)) != std::string::npos) {
+        pending.erase(0, pos + arrival_command.size());
+        match_count++;
+    }
+    if (pending.size() > 1024) {
+        pending.erase(0, pending.size() - 1024);
+    }
+    return match_count > 0;
+}
+
+static void SerialReceiveThread(SerialPort* serial, const std::string& arrival_command) {
+    std::string pending;
+    uint8_t buffer[128];
+    while (g_running.load()) {
+        int n = serial->Receive(buffer, sizeof(buffer), 100);
+        if (n < 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        if (n == 0) {
+            continue;
+        }
+
+        std::string chunk((char*)buffer, (size_t)n);
+        pending += chunk;
+        size_t match_count = 0;
+        if (SerialArrivalMatched(pending, arrival_command, match_count)) {
+            uint64_t total = g_chip_arrival_requests.fetch_add(match_count) + match_count;
+            std::printf("[SERIAL] received arrival command count=%zu total=%llu data=%s\n",
+                        match_count,
+                        (unsigned long long)total,
+                        PrintableSerialText(chunk).c_str());
+            std::fflush(stdout);
+        } else {
+            std::printf("[SERIAL] received data=%s\n", PrintableSerialText(chunk).c_str());
+            std::fflush(stdout);
+        }
+    }
+}
+
+static bool SendMotorMoveCommand(SerialPort* serial,
+                                 const std::string& move_command_template,
+                                 int current_slot,
+                                 int next_slot) {
+    if (!serial || !serial->IsOpen()) {
+        return false;
+    }
+    std::string command = FormatMotorCommand(move_command_template, current_slot, next_slot);
+    int sent = serial->Send((const uint8_t*)command.data(), command.size());
+    if (sent != (int)command.size()) {
+        std::fprintf(stderr, "[ERROR] serial send failed slot=%d next=%d sent=%d size=%zu\n",
+                     current_slot, next_slot, sent, command.size());
+        return false;
+    }
+    std::printf("[SERIAL] sent move command slot=%d next=%d data=%s\n",
+                current_slot, next_slot, PrintableSerialText(command).c_str());
+    std::fflush(stdout);
+    return true;
+}
+
 static void OcrThread(ppocr_system_app_context* ctx, const std::string& expected_model) {
     ppocr_det_postprocess_params params;
     params.threshold = 0.3f;
@@ -1349,10 +1537,128 @@ static std::string JoinReasons(const std::vector<std::string>& reasons) {
     return oss.str();
 }
 
+static const char* JsonBool(bool value) {
+    return value ? "true" : "false";
+}
+
+static float OcrConfidence(const OcrState& state) {
+    if (!state.ready || state.results.count <= 0) {
+        return 0.0f;
+    }
+    float sum = 0.0f;
+    int count = 0;
+    for (int i = 0; i < state.results.count; ++i) {
+        const float score = state.results.text_result[i].text.score;
+        if (score > 0.0f) {
+            sum += score;
+            ++count;
+        }
+    }
+    return count > 0 ? sum / static_cast<float>(count) : 0.0f;
+}
+
+static std::string DetectionListJson(const DetectionState& state, const YoloDetector& detector) {
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < state.detections.size(); ++i) {
+        const Detection& det = state.detections[i];
+        if (i) {
+            oss << ",";
+        }
+        oss << "{"
+            << "\"class_id\":" << det.cls_id << ","
+            << "\"label\":" << CloudUploader::JsonString(detector.Label(det.cls_id)) << ","
+            << "\"score\":" << det.score
+            << "}";
+    }
+    oss << "]";
+    return oss.str();
+}
+
+static std::string DetectionSummary(const DetectionState& state, const YoloDetector& detector) {
+    if (!state.ready) {
+        return "等待结果";
+    }
+    if (state.detections.empty()) {
+        return "无";
+    }
+    std::vector<std::string> labels;
+    std::set<std::string> unique_labels;
+    for (const Detection& det : state.detections) {
+        unique_labels.insert(detector.Label(det.cls_id));
+    }
+    labels.assign(unique_labels.begin(), unique_labels.end());
+    return JoinReasons(labels);
+}
+
+static void UploadChipInspection(CloudUploader* uploader,
+                                 int slot,
+                                 int chip_slots,
+                                 bool inference_ok,
+                                 const std::string& expected_model,
+                                 const OcrState& ocr,
+                                 const DetectionState& defect,
+                                 const YoloDetector& defect_detector) {
+    if (!uploader || !uploader->enabled()) {
+        return;
+    }
+
+    const bool ocr_pass = ocr.ready && ocr.model_ok;
+    std::ostringstream ocr_json;
+    ocr_json << "{"
+             << "\"slot_index\":" << slot << ","
+             << "\"slot_count\":" << chip_slots << ","
+             << "\"template\":" << CloudUploader::JsonString(expected_model) << ","
+             << "\"raw_text\":" << CloudUploader::JsonString(ocr.raw_text) << ","
+             << "\"normalized_text\":" << CloudUploader::JsonString(ocr.filtered_text) << ","
+             << "\"matched\":" << JsonBool(ocr_pass) << ","
+             << "\"confidence\":" << OcrConfidence(ocr) << ","
+             << "\"inference_ok\":" << JsonBool(inference_ok) << ","
+             << "\"status\":" << CloudUploader::JsonString(ocr_pass ? "pass" : "ng")
+             << "}";
+    uploader->PostInspectionResult("ocr", kChipCameraDevice, ocr_json.str());
+
+    const bool defect_pass = defect.ready && defect.detections.empty();
+    std::ostringstream defect_json;
+    defect_json << "{"
+                << "\"slot_index\":" << slot << ","
+                << "\"slot_count\":" << chip_slots << ","
+                << "\"defect_found\":" << JsonBool(!defect_pass) << ","
+                << "\"defect_count\":" << defect.detections.size() << ","
+                << "\"defect_summary\":" << CloudUploader::JsonString(DetectionSummary(defect, defect_detector)) << ","
+                << "\"detections\":" << DetectionListJson(defect, defect_detector) << ","
+                << "\"inference_ok\":" << JsonBool(inference_ok) << ","
+                << "\"status\":" << CloudUploader::JsonString(defect_pass ? "pass" : "ng")
+                << "}";
+    uploader->PostInspectionResult("defect", kChipCameraDevice, defect_json.str());
+
+    if (ocr.ready && !ocr.model_ok) {
+        std::ostringstream alarm_json;
+        alarm_json << "{"
+                   << "\"slot_index\":" << slot << ","
+                   << "\"template\":" << CloudUploader::JsonString(expected_model) << ","
+                   << "\"recognized_text\":" << CloudUploader::JsonString(ocr.filtered_text) << ","
+                   << "\"raw_text\":" << CloudUploader::JsonString(ocr.raw_text)
+                   << "}";
+        uploader->PostAlarm("ocr", "warning", "text_mismatch", "字符不匹配", alarm_json.str());
+    }
+    if (defect.ready && !defect.detections.empty()) {
+        std::ostringstream alarm_json;
+        alarm_json << "{"
+                   << "\"slot_index\":" << slot << ","
+                   << "\"defect_summary\":" << CloudUploader::JsonString(DetectionSummary(defect, defect_detector)) << ","
+                   << "\"detections\":" << DetectionListJson(defect, defect_detector)
+                   << "}";
+        uploader->PostAlarm("defect", "critical", "surface_defect", "检测到芯片缺陷", alarm_json.str());
+    }
+}
+
 static void PrintStatusEvery2s(const std::string& expected_model,
                                const YoloDetector& defect_detector,
-                               const YoloDetector& fatigue_detector) {
+                               const YoloDetector& fatigue_detector,
+                               CloudUploader* uploader) {
     static auto last_print = std::chrono::steady_clock::now() - std::chrono::seconds(2);
+    static bool previous_fatigue = false;
     auto now = std::chrono::steady_clock::now();
     if (now - last_print < std::chrono::seconds(2)) {
         return;
@@ -1416,6 +1722,30 @@ static void PrintStatusEvery2s(const std::string& expected_model,
         }
     }
     std::printf("[FATIGUE] %s reason=%s\n", is_fatigue ? "疲劳" : "未疲劳", fatigue_reason.c_str());
+    if (uploader && uploader->enabled() && fatigue.ready) {
+        std::ostringstream result_json;
+        result_json << "{"
+                    << "\"fatigue_detected\":" << JsonBool(is_fatigue) << ","
+                    << "\"reason\":" << CloudUploader::JsonString(fatigue_reason) << ","
+                    << "\"detection_count\":" << fatigue.detections.size() << ","
+                    << "\"detections\":" << DetectionListJson(fatigue, fatigue_detector) << ","
+                    << "\"status\":" << CloudUploader::JsonString(is_fatigue ? "warning" : "pass")
+                    << "}";
+        uploader->PostInspectionResult("fatigue", "/dev/video23", result_json.str());
+    }
+    if (is_fatigue && !previous_fatigue) {
+        AudioAlert::PlayFatigueWarningAsync();
+        if (uploader && uploader->enabled()) {
+            std::ostringstream alarm_json;
+            alarm_json << "{"
+                       << "\"fatigue_detected\":true,"
+                       << "\"reason\":" << CloudUploader::JsonString(fatigue_reason) << ","
+                       << "\"detections\":" << DetectionListJson(fatigue, fatigue_detector)
+                       << "}";
+            uploader->PostAlarm("fatigue", "warning", "fatigue_detected", "检测到疲劳告警", alarm_json.str());
+        }
+    }
+    previous_fatigue = is_fatigue;
     std::fflush(stdout);
 }
 
@@ -1425,6 +1755,14 @@ int main(int argc, char** argv) {
 
     std::string chip_camera = kChipCameraDevice;
     std::string fatigue_camera = "/dev/video23";
+    std::string serial_port_name = kDefaultSerialPort;
+    int serial_baudrate = 115200;
+    std::string arrival_command = kDefaultArrivalCommand;
+    std::string move_command = kDefaultMoveCommand;
+    std::string expected_model_arg;
+    std::string cloud_config_path = kDefaultCloudUploadConfig;
+    bool cloud_upload_enabled = true;
+    int chip_slots = kDefaultChipSlots;
     bool show_window = true;
     bool display_only = false;
     for (int i = 1; i < argc; ++i) {
@@ -1434,13 +1772,37 @@ int main(int argc, char** argv) {
                       << ", ignore " << argv[++i] << "\n";
         } else if (arg == "--fatigue-camera" && i + 1 < argc) {
             fatigue_camera = argv[++i];
+        } else if (arg == "--serial-port" && i + 1 < argc) {
+            serial_port_name = argv[++i];
+        } else if (arg == "--serial-baud" && i + 1 < argc) {
+            serial_baudrate = std::stoi(argv[++i]);
+        } else if (arg == "--arrival-command" && i + 1 < argc) {
+            arrival_command = DecodeEscapedCommand(argv[++i]);
+        } else if (arg == "--move-command" && i + 1 < argc) {
+            move_command = DecodeEscapedCommand(argv[++i]);
+        } else if (arg == "--chip-slots" && i + 1 < argc) {
+            chip_slots = std::max(1, std::stoi(argv[++i]));
+        } else if (arg == "--chip-model" && i + 1 < argc) {
+            expected_model_arg = argv[++i];
+        } else if (arg == "--cloud-config" && i + 1 < argc) {
+            cloud_config_path = argv[++i];
+        } else if (arg == "--no-cloud-upload") {
+            cloud_upload_enabled = false;
         } else if (arg == "--no-window") {
             show_window = false;
+        } else if (arg == "--window" || arg == "--show-window") {
+            show_window = true;
         } else if (arg == "--display-only") {
             display_only = true;
         } else if (arg == "--help" || arg == "-h") {
-            std::cout << "Usage: ./main_process [--fatigue-camera /dev/video23] [--no-window] [--display-only]\n";
+            std::cout << "Usage: ./main_process [--fatigue-camera /dev/video23] [--serial-port /dev/ttyS9]\n";
+            std::cout << "                      [--serial-baud 115200] [--arrival-command DONE]\n";
+            std::cout << "                      [--move-command 'MOVE_NEXT\\n'] [--chip-slots 4]\n";
+            std::cout << "                      [--chip-model STM32F103C8T6]\n";
+            std::cout << "                      [--cloud-config config/cloud_upload.ini] [--no-cloud-upload]\n";
+            std::cout << "                      [--no-window] [--display-only]\n";
             std::cout << "Chip OCR/defect camera is fixed to " << kChipCameraDevice << "\n";
+            std::cout << "Move command supports {current} and {next} placeholders.\n";
             return 0;
         }
     }
@@ -1449,12 +1811,10 @@ int main(int argc, char** argv) {
     if (display_only) {
         expected_model = "DISPLAY";
     } else {
-        std::cout << "请输入待检测芯片型号: ";
-        std::getline(std::cin, expected_model);
-        expected_model = NormalizeText(expected_model);
+        expected_model = NormalizeText(expected_model_arg);
         if (expected_model.empty()) {
-            std::cerr << "[ERROR] 型号不能为空\n";
-            return 1;
+            expected_model = "DEFAULT";
+            std::cerr << "[WARN] --chip-model not set, use DEFAULT for OCR match\n";
         }
     }
 
@@ -1462,11 +1822,22 @@ int main(int argc, char** argv) {
     std::cout << "[INFO] chip camera: " << chip_camera << " (OCR + defect)\n";
     std::cout << "[INFO] fatigue camera: " << fatigue_camera << "\n";
     std::cout << "[INFO] NPU core: OCR=core0, fatigue=core1, defect=core2\n";
-    std::cout << "[INFO] video21 schedule: defect every frame, OCR every "
-              << kOcrIntervalFrames << " frames\n";
+    std::cout << "[INFO] video21 schedule: wait serial arrival, inspect one chip, then move next\n";
+    std::cout << "[INFO] chip slots: " << chip_slots << "\n";
+    std::cout << "[INFO] serial: port=" << serial_port_name
+              << " baud=" << serial_baudrate
+              << " arrival=" << PrintableSerialText(arrival_command)
+              << " move=" << PrintableSerialText(move_command) << "\n";
     if (display_only) {
         std::cout << "[INFO] display-only mode: models disabled\n";
         return RunDisplayOnlyFromCaptureService(chip_camera);
+    }
+
+    CloudUploader cloud_uploader;
+    CloudUploader* uploader = nullptr;
+    if (cloud_upload_enabled && cloud_uploader.Start(cloud_config_path)) {
+        uploader = &cloud_uploader;
+        cloud_uploader.UpdateCameraStatus(false, false);
     }
 
     setenv("RKNN_LOG_LEVEL", "0", 0);
@@ -1502,9 +1873,33 @@ int main(int argc, char** argv) {
         }
     }
 
+    SerialPort serial;
+    std::thread serial_worker;
+    if (!display_only) {
+        SerialConfig serial_config;
+        serial_config.port = serial_port_name;
+        serial_config.baudrate = serial_baudrate;
+        serial_config.databits = 8;
+        serial_config.stopbits = 1;
+        serial_config.parity = 'N';
+        if (!serial.Open(serial_config)) {
+            std::cerr << "[ERROR] failed to open serial port " << serial_port_name << "\n";
+            release_ppocr_model(&ocr_ctx.det_context);
+            release_ppocr_model(&ocr_ctx.rec_context);
+            defect_detector.Release();
+            fatigue_detector.Release();
+            return 1;
+        }
+        serial_worker = std::thread(SerialReceiveThread, &serial, arrival_command);
+        std::cout << "[INFO] waiting for motor arrival command before chip 1 inspection\n";
+    }
+
     pid_t chip_capture_pid = StartCameraCaptureService(chip_camera, kChipFramePath);
     if (chip_capture_pid <= 0) {
         std::cerr << "[ERROR] failed to start camera_capture_service for " << chip_camera << "\n";
+        g_running.store(false);
+        if (serial_worker.joinable()) serial_worker.join();
+        serial.Close();
         release_ppocr_model(&ocr_ctx.det_context);
         release_ppocr_model(&ocr_ctx.rec_context);
         defect_detector.Release();
@@ -1513,17 +1908,18 @@ int main(int argc, char** argv) {
     }
     std::cout << "[INFO] chip camera capture service started: pid=" << chip_capture_pid
               << " frame=" << kChipFramePath << "\n";
+    if (uploader) {
+        uploader->UpdateCameraStatus(true, false);
+    }
 
     std::thread chip_ocr_worker;
     std::thread chip_defect_worker;
-    if (!display_only) {
-        chip_ocr_worker = std::thread(OcrThread, &ocr_ctx, expected_model);
-        chip_defect_worker = std::thread(YoloThread, "defect", &g_chip_frame, &defect_detector,
-                                         &g_defect_mutex, &g_defect_state);
-    }
     std::thread fatigue_capture;
     if (!display_only) {
         fatigue_capture = std::thread(CaptureThread, fatigue_camera, &g_fatigue_frame);
+        if (uploader) {
+            uploader->UpdateCameraStatus(true, true);
+        }
     }
     std::thread fatigue_worker;
     if (!display_only) {
@@ -1546,6 +1942,8 @@ int main(int argc, char** argv) {
 
     bool printed_chip_frame_info = false;
     int empty_chip_frame_count = 0;
+    uint64_t handled_arrival_requests = 0;
+    int current_chip_slot = 1;
 
     while (g_running.load()) {
         cv::Mat chip_frame;
@@ -1581,6 +1979,58 @@ int main(int argc, char** argv) {
             g_chip_frame.display = unused_display.clone();
             g_chip_frame.seq++;
             g_chip_frame.ready = true;
+        }
+
+        if (!display_only) {
+            uint64_t requested = g_chip_arrival_requests.load();
+            if (requested > handled_arrival_requests) {
+                handled_arrival_requests++;
+                int slot = current_chip_slot;
+                int next_slot = slot >= chip_slots ? 1 : slot + 1;
+                std::printf("[CHIP] start inspection slot=%d/%d request=%llu\n",
+                            slot, chip_slots, (unsigned long long)handled_arrival_requests);
+                std::fflush(stdout);
+
+                OcrState ocr_result;
+                DetectionState defect_result;
+                bool inference_ok = RunChipInspectionOnFrame(&ocr_ctx,
+                                                             expected_model,
+                                                             &defect_detector,
+                                                             chip_gray,
+                                                             ocr_result,
+                                                             defect_result);
+                {
+                    std::lock_guard<std::mutex> lock(g_ocr_mutex);
+                    g_ocr_state = ocr_result;
+                }
+                {
+                    std::lock_guard<std::mutex> lock(g_defect_mutex);
+                    g_defect_state = defect_result;
+                }
+
+                const bool chip_ok = ocr_result.ready && ocr_result.model_ok &&
+                                     defect_result.ready && defect_result.detections.empty();
+                std::printf("[CHIP] finish slot=%d/%d result=%s inference=%s ocr=%s defect_count=%zu\n",
+                            slot,
+                            chip_slots,
+                            chip_ok ? "OK" : "NG",
+                            inference_ok ? "OK" : "FAIL",
+                            ocr_result.filtered_text.empty() ? "EMPTY" : ocr_result.filtered_text.c_str(),
+                            defect_result.detections.size());
+                std::fflush(stdout);
+
+                UploadChipInspection(uploader,
+                                     slot,
+                                     chip_slots,
+                                     inference_ok,
+                                     expected_model,
+                                     ocr_result,
+                                     defect_result,
+                                     defect_detector);
+
+                SendMotorMoveCommand(&serial, move_command, slot, next_slot);
+                current_chip_slot = next_slot;
+            }
         }
 
         cv::Mat fatigue_display;
@@ -1650,7 +2100,7 @@ int main(int argc, char** argv) {
         }
 
         if (!display_only) {
-            PrintStatusEvery2s(expected_model, defect_detector, fatigue_detector);
+            PrintStatusEvery2s(expected_model, defect_detector, fatigue_detector, uploader);
         }
     }
 
@@ -1658,8 +2108,14 @@ int main(int argc, char** argv) {
     if (chip_defect_worker.joinable()) chip_defect_worker.join();
     if (fatigue_capture.joinable()) fatigue_capture.join();
     if (fatigue_worker.joinable()) fatigue_worker.join();
+    if (serial_worker.joinable()) serial_worker.join();
 
     StopCameraCaptureService(chip_capture_pid);
+    if (uploader) {
+        uploader->UpdateCameraStatus(false, false);
+        uploader->Stop();
+    }
+    serial.Close();
     if (!display_only) {
         release_ppocr_model(&ocr_ctx.det_context);
         release_ppocr_model(&ocr_ctx.rec_context);

@@ -67,8 +67,13 @@ chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o: /userdata/sdcard/workspa
   /usr/include/aarch64-linux-gnu/bits/strings_fortified.h \
   /usr/include/aarch64-linux-gnu/bits/string_fortified.h
 
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o: chip_utils.out/fileutils_autogen/mocs_compilation.cpp \
+  /usr/include/stdc-predef.h
+
 
 /usr/include/aarch64-linux-gnu/bits/strings_fortified.h:
+
+chip_utils.out/fileutils_autogen/mocs_compilation.cpp:
 
 /usr/include/strings.h:
 

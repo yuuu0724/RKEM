@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_defect_autogen/mocs_compilation.cpp" "CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/camera.cc" "CMakeFiles/process_defect.dir/src/camera.cc.o" "gcc" "CMakeFiles/process_defect.dir/src/camera.cc.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/defect_engine.cc" "CMakeFiles/process_defect.dir/src/defect_engine.cc.o" "gcc" "CMakeFiles/process_defect.dir/src/defect_engine.cc.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc" "CMakeFiles/process_defect.dir/src/ipc_manager.cc.o" "gcc" "CMakeFiles/process_defect.dir/src/ipc_manager.cc.o.d"

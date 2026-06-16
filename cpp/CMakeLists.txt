@@ -24,8 +24,8 @@ if (BUILD_QT_HMI)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql)
 endif()
 
 # 复用 chip 工程里的 PP-OCRv5 后处理和图像工具
@@ -91,6 +91,14 @@ set(COMMON_SRCS
     src/qt_interface.cc
 )
 
+set(AUDIO_ALERT_SRCS
+    src/audio_alert.cc
+)
+
+set(CLOUD_UPLOAD_SRCS
+    src/cloud_uploader.cc
+)
+
 # OCR 引擎源文件
 set(OCR_ENGINE_SRCS
     src/ocr_engine.cc
@@ -110,29 +118,37 @@ set(DEFECT_ENGINE_SRCS
 # 可执行文件定义
 # ============================================================
 
-# 主进程
-add_executable(main_process
-    src/main.cc
-    ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
-    ${CHIP_ROOT}/cpp/postprocess.cc
-    ${CHIP_ROOT}/cpp/clipper.cc
-)
+function(add_detection_main_target TARGET_NAME)
+    add_executable(${TARGET_NAME}
+        src/main.cc
+        src/logger.cc
+        src/serial_port.cc
+        ${AUDIO_ALERT_SRCS}
+        ${CLOUD_UPLOAD_SRCS}
+        ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
+        ${CHIP_ROOT}/cpp/postprocess.cc
+        ${CHIP_ROOT}/cpp/clipper.cc
+    )
 
-target_link_libraries(main_process
-    imageutils
-    fileutils
-    ${LIBRGA}
-    ${OpenCV_LIBS}
-    ${LIBRKNNRT}
-    dl
-    pthread
-)
+    target_link_libraries(${TARGET_NAME}
+        imageutils
+        fileutils
+        ${LIBRGA}
+        ${OpenCV_LIBS}
+        ${LIBRKNNRT}
+        dl
+        pthread
+    )
 
-target_include_directories(main_process PRIVATE
-    ${CHIP_ROOT}/cpp
-    ${CHIP_ROOT}/utils
-    ${LIBRKNNRT_INCLUDES}
-)
+    target_include_directories(${TARGET_NAME} PRIVATE
+        ${CHIP_ROOT}/cpp
+        ${CHIP_ROOT}/utils
+        ${LIBRKNNRT_INCLUDES}
+    )
+endfunction()
+
+# 检测主流程命令行入口，保留给无界面调试。
+add_detection_main_target(main_process_cli)
 
 set_source_files_properties(
     ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
@@ -159,6 +175,7 @@ add_executable(process_fatigue
     src/process_fatigue.cc
     ${COMMON_SRCS}
     ${FATIGUE_ENGINE_SRCS}
+    ${AUDIO_ALERT_SRCS}
 )
 
 target_link_libraries(process_fatigue
@@ -203,37 +220,47 @@ target_link_libraries(camera_capture_service
 )
 
 if (BUILD_QT_HMI)
-    # 工业视觉检测 HMI，仅展示和交互，真实数据通过 MainWindow 接口注入
-    add_executable(integrated_inspection_hmi
-        src/hmi_main.cc
-        src/hmi_mainwindow.cc
-        src/hmi_ocr_detector.cc
-        src/yolo_detector.cc
-        ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
-        ${CHIP_ROOT}/cpp/postprocess.cc
-        ${CHIP_ROOT}/cpp/clipper.cc
-        include/hmi_mainwindow.h
-        include/hmi_ocr_detector.h
-        include/yolo_detector.h
-    )
+    function(add_integrated_hmi_target TARGET_NAME)
+        add_executable(${TARGET_NAME}
+            src/hmi_main.cc
+            src/hmi_mainwindow.cc
+            src/hmi_ocr_detector.cc
+            src/yolo_detector.cc
+            src/logger.cc
+            src/serial_port.cc
+            ${AUDIO_ALERT_SRCS}
+            ${CLOUD_UPLOAD_SRCS}
+            ${CHIP_ROOT}/cpp/rknpu2/ppocrv5.cc
+            ${CHIP_ROOT}/cpp/postprocess.cc
+            ${CHIP_ROOT}/cpp/clipper.cc
+            include/hmi_mainwindow.h
+            include/hmi_ocr_detector.h
+            include/yolo_detector.h
+        )
 
-    target_link_libraries(integrated_inspection_hmi
-        Qt${QT_VERSION_MAJOR}::Widgets
-        imageutils
-        fileutils
-        ${LIBRGA}
-        ${OpenCV_LIBS}
-        ${LIBRKNNRT}
-        dl
-        pthread
-    )
+        target_link_libraries(${TARGET_NAME}
+            Qt${QT_VERSION_MAJOR}::Widgets
+            Qt${QT_VERSION_MAJOR}::Sql
+            imageutils
+            fileutils
+            ${LIBRGA}
+            ${OpenCV_LIBS}
+            ${LIBRKNNRT}
+            dl
+            pthread
+        )
 
-    target_include_directories(integrated_inspection_hmi PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CHIP_ROOT}/cpp
-        ${CHIP_ROOT}/utils
-        ${OpenCV_INCLUDE_DIRS}
-    )
+        target_include_directories(${TARGET_NAME} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CHIP_ROOT}/cpp
+            ${CHIP_ROOT}/utils
+            ${OpenCV_INCLUDE_DIRS}
+        )
+    endfunction()
+
+    # main_process 作为现场一体化入口：Qt HMI + 检测 + 串口 + 上传。
+    add_integrated_hmi_target(main_process)
+    add_integrated_hmi_target(integrated_inspection_hmi)
 endif()
 
 # ============================================================
@@ -241,7 +268,7 @@ endif()
 # ============================================================
 
 # 安装可执行文件
-set(INSTALL_TARGETS main_process process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service)
+set(INSTALL_TARGETS main_process main_process_cli process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service)
 if (BUILD_QT_HMI)
     list(APPEND INSTALL_TARGETS integrated_inspection_hmi)
 endif()
@@ -271,6 +298,14 @@ install(FILES
 
 file(GLOB DEFECT_RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../model/defect/*.rknn")
 install(FILES ${DEFECT_RKNN_FILES} DESTINATION model/defect)
+
+file(GLOB ALERT_MP3_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../MP3/*.mp3")
+install(FILES ${ALERT_MP3_FILES} DESTINATION MP3)
+
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/config/cloud_upload.ini
+    DESTINATION config
+)
 
 # 创建日志目录
 install(CODE "file(MAKE_DIRECTORY \${CMAKE_INSTALL_PREFIX}/logs)")

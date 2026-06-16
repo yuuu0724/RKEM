@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service_autogen/mocs_compilation.cpp" "CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/camera_capture_service.cc" "CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o" "gcc" "CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o.d"
   )
 

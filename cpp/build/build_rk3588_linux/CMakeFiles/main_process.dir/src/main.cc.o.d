@@ -366,9 +366,15 @@ CMakeFiles/main_process.dir/src/main.cc.o: \
  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/../../../chip/cpp/../utils/common.h \
  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/../../../chip/cpp/../3rdparty/timer/easy_timer.h \
  /usr/include/aarch64-linux-gnu/sys/time.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/audio_alert.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/cloud_uploader.h \
+ /usr/include/c++/11/atomic /usr/include/c++/11/condition_variable \
+ /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
+ /usr/include/c++/11/bits/this_thread_sleep.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/serial_port.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/common.h \
  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/include/rknn_api.h \
- /usr/include/c++/11/atomic /usr/include/c++/11/csignal \
- /usr/include/signal.h \
+ /usr/include/c++/11/csignal /usr/include/signal.h \
  /usr/include/aarch64-linux-gnu/bits/signum-generic.h \
  /usr/include/aarch64-linux-gnu/bits/signum-arch.h \
  /usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h \
@@ -416,7 +422,5 @@ CMakeFiles/main_process.dir/src/main.cc.o: \
  /usr/include/c++/11/fstream \
  /usr/include/aarch64-linux-gnu/c++/11/bits/basic_file.h \
  /usr/include/aarch64-linux-gnu/c++/11/bits/c++io.h \
- /usr/include/c++/11/bits/fstream.tcc /usr/include/c++/11/thread \
- /usr/include/c++/11/bits/std_thread.h \
- /usr/include/c++/11/bits/this_thread_sleep.h \
+ /usr/include/c++/11/bits/fstream.tcc \
  /usr/include/aarch64-linux-gnu/sys/wait.h

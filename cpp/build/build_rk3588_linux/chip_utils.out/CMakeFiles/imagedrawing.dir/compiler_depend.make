@@ -79,8 +79,13 @@ chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o: /userdata/sdcard/w
   /userdata/sdcard/workspace/proj/chip/utils/common.h \
   /userdata/sdcard/workspace/proj/chip/utils/font.h
 
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o: chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp \
+  /usr/include/stdc-predef.h
+
 
 /userdata/sdcard/workspace/proj/chip/utils/font.h:
+
+chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp:
 
 /userdata/sdcard/workspace/proj/chip/utils/common.h:
 

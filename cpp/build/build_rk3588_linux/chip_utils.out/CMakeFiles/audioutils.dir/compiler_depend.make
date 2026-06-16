@@ -75,6 +75,11 @@ chip_utils.out/CMakeFiles/audioutils.dir/audio_utils.c.o: /userdata/sdcard/works
   /usr/include/aarch64-linux-gnu/bits/mathcalls.h \
   /userdata/sdcard/workspace/proj/chip/utils/audio_utils.h
 
+chip_utils.out/CMakeFiles/audioutils.dir/audioutils_autogen/mocs_compilation.cpp.o: chip_utils.out/audioutils_autogen/mocs_compilation.cpp \
+  /usr/include/stdc-predef.h
+
+
+chip_utils.out/audioutils_autogen/mocs_compilation.cpp:
 
 /usr/include/aarch64-linux-gnu/bits/mathcalls.h:
 

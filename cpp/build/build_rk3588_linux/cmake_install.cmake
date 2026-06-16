@@ -42,6 +42,16 @@ if(NOT DEFINED CMAKE_OBJDUMP)
   set(CMAKE_OBJDUMP "/usr/bin/aarch64-linux-gnu-objdump")
 endif()
 
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_3rdparty.out/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/cmake_install.cmake")
+endif()
+
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE PROGRAM FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/librga/Linux/aarch64/librga.so")
 endif()
@@ -55,7 +65,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process" AND
@@ -63,9 +73,29 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process"
          OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process")
+    endif()
+  endif()
+endif()
+
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli"
+         RPATH "\$ORIGIN/lib")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_cli")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli"
+         OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
+         NEW_RPATH "\$ORIGIN/lib")
+    if(CMAKE_INSTALL_DO_STRIP)
+      execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./main_process_cli")
     endif()
   endif()
 endif()
@@ -75,7 +105,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_ocr")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_ocr"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_ocr")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_ocr" AND
@@ -83,7 +113,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_ocr"
          OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_ocr")
     endif()
@@ -95,7 +125,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_fatigue")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_fatigue"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_fatigue")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_fatigue" AND
@@ -103,7 +133,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_fatigue"
          OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_fatigue")
     endif()
@@ -115,7 +145,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_defect")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_defect"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_defect")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_defect" AND
@@ -123,7 +153,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_defect"
          OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./process_defect")
     endif()
@@ -135,7 +165,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./two_model_camera_demo")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./two_model_camera_demo"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/two_model_camera_demo")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./two_model_camera_demo" AND
@@ -143,7 +173,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./two_model_camera_demo"
          OLD_RPATH ":::::::::::"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./two_model_camera_demo")
     endif()
@@ -155,7 +185,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./camera_capture_service")
     file(RPATH_CHECK
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./camera_capture_service"
-         RPATH "$ORIGIN/lib")
+         RPATH "\$ORIGIN/lib")
   endif()
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./camera_capture_service" AND
@@ -163,9 +193,29 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./camera_capture_service"
          OLD_RPATH ":::::::::::"
-         NEW_RPATH "$ORIGIN/lib")
+         NEW_RPATH "\$ORIGIN/lib")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./camera_capture_service")
+    endif()
+  endif()
+endif()
+
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi")
+    file(RPATH_CHECK
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi"
+         RPATH "\$ORIGIN/lib")
+  endif()
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/." TYPE EXECUTABLE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/integrated_inspection_hmi")
+  if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi" AND
+     NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi")
+    file(RPATH_CHANGE
+         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi"
+         OLD_RPATH "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../third_party/rknpu2/Linux/aarch64:"
+         NEW_RPATH "\$ORIGIN/lib")
+    if(CMAKE_INSTALL_DO_STRIP)
+      execute_process(COMMAND "/usr/bin/aarch64-linux-gnu-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/./integrated_inspection_hmi")
     endif()
   endif()
 endif()
@@ -198,14 +248,18 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/logs)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/MP3" TYPE FILE FILES
+    "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/fatigue.mp3"
+    "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/recognize.mp3"
+    )
 endif()
 
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for each subdirectory.
-  include("/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_3rdparty.out/cmake_install.cmake")
-  include("/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/cmake_install.cmake")
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/config" TYPE FILE FILES "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/config/cloud_upload.ini")
+endif()
 
+if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/logs)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)

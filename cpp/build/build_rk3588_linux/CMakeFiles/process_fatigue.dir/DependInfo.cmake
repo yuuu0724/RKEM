@@ -8,6 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/process_fatigue_autogen/mocs_compilation.cpp" "CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/audio_alert.cc" "CMakeFiles/process_fatigue.dir/src/audio_alert.cc.o" "gcc" "CMakeFiles/process_fatigue.dir/src/audio_alert.cc.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/camera.cc" "CMakeFiles/process_fatigue.dir/src/camera.cc.o" "gcc" "CMakeFiles/process_fatigue.dir/src/camera.cc.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/fatigue_engine.cc" "CMakeFiles/process_fatigue.dir/src/fatigue_engine.cc.o" "gcc" "CMakeFiles/process_fatigue.dir/src/fatigue_engine.cc.o.d"
   "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/ipc_manager.cc" "CMakeFiles/process_fatigue.dir/src/ipc_manager.cc.o" "gcc" "CMakeFiles/process_fatigue.dir/src/ipc_manager.cc.o.d"

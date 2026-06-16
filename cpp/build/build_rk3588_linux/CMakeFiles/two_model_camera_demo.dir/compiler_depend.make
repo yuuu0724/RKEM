@@ -421,6 +421,9 @@ CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o: ../../src/t
   /usr/include/opencv4/opencv2/video/tracking.hpp \
   /usr/include/opencv4/opencv2/video/background_segm.hpp
 
+CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o: two_model_camera_demo_autogen/mocs_compilation.cpp \
+  /usr/include/stdc-predef.h
+
 
 /usr/include/opencv4/opencv2/video/background_segm.hpp:
 
@@ -907,6 +910,8 @@ CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.o: ../../src/t
 /usr/include/c++/11/bits/uses_allocator.h:
 
 /usr/include/opencv4/opencv2/core/cvdef.h:
+
+two_model_camera_demo_autogen/mocs_compilation.cpp:
 
 /usr/include/c++/11/bits/stl_construct.h:
 

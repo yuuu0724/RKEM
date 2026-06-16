@@ -1,4 +1,9 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/process_defect_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/process_defect_autogen.dir/ParseCache.txt"
+  "process_defect_autogen"
+  "CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.o"
+  "CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.o.d"
   "CMakeFiles/process_defect.dir/src/camera.cc.o"
   "CMakeFiles/process_defect.dir/src/camera.cc.o.d"
   "CMakeFiles/process_defect.dir/src/defect_engine.cc.o"

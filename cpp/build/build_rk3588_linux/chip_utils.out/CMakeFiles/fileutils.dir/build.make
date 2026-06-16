@@ -69,10 +69,24 @@ include chip_utils.out/CMakeFiles/fileutils.dir/progress.make
 # Include the compile flags for this target's objects.
 include chip_utils.out/CMakeFiles/fileutils.dir/flags.make
 
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o: chip_utils.out/CMakeFiles/fileutils.dir/flags.make
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o: chip_utils.out/fileutils_autogen/mocs_compilation.cpp
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o: chip_utils.out/CMakeFiles/fileutils.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o -MF CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/fileutils_autogen/mocs_compilation.cpp
+
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.i"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/fileutils_autogen/mocs_compilation.cpp > CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.i
+
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.s"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/fileutils_autogen/mocs_compilation.cpp -o CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.s
+
 chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o: chip_utils.out/CMakeFiles/fileutils.dir/flags.make
 chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o: /userdata/sdcard/workspace/proj/chip/utils/file_utils.c
 chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o: chip_utils.out/CMakeFiles/fileutils.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o"
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o -MF CMakeFiles/fileutils.dir/file_utils.c.o.d -o CMakeFiles/fileutils.dir/file_utils.c.o -c /userdata/sdcard/workspace/proj/chip/utils/file_utils.c
 
 chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.i: cmake_force
@@ -85,15 +99,17 @@ chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.s: cmake_force
 
 # Object files for target fileutils
 fileutils_OBJECTS = \
+"CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/fileutils.dir/file_utils.c.o"
 
 # External object files for target fileutils
 fileutils_EXTERNAL_OBJECTS =
 
+chip_utils.out/libfileutils.a: chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o
 chip_utils.out/libfileutils.a: chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o
 chip_utils.out/libfileutils.a: chip_utils.out/CMakeFiles/fileutils.dir/build.make
 chip_utils.out/libfileutils.a: chip_utils.out/CMakeFiles/fileutils.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libfileutils.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library libfileutils.a"
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && $(CMAKE_COMMAND) -P CMakeFiles/fileutils.dir/cmake_clean_target.cmake
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/fileutils.dir/link.txt --verbose=$(VERBOSE)
 

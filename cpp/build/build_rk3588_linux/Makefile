@@ -162,17 +162,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named main_process
+# Target rules for targets named main_process_cli
 
 # Build rule for target.
-main_process: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_process
-.PHONY : main_process
+main_process_cli: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_process_cli
+.PHONY : main_process_cli
 
 # fast build rule for target.
-main_process/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/build
-.PHONY : main_process/fast
+main_process_cli/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/build
+.PHONY : main_process_cli/fast
 
 #=============================================================================
 # Target rules for targets named process_ocr
@@ -240,6 +240,136 @@ camera_capture_service/fast:
 .PHONY : camera_capture_service/fast
 
 #=============================================================================
+# Target rules for targets named main_process
+
+# Build rule for target.
+main_process: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_process
+.PHONY : main_process
+
+# fast build rule for target.
+main_process/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/build
+.PHONY : main_process/fast
+
+#=============================================================================
+# Target rules for targets named integrated_inspection_hmi
+
+# Build rule for target.
+integrated_inspection_hmi: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 integrated_inspection_hmi
+.PHONY : integrated_inspection_hmi
+
+# fast build rule for target.
+integrated_inspection_hmi/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/build
+.PHONY : integrated_inspection_hmi/fast
+
+#=============================================================================
+# Target rules for targets named main_process_cli_autogen
+
+# Build rule for target.
+main_process_cli_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_process_cli_autogen
+.PHONY : main_process_cli_autogen
+
+# fast build rule for target.
+main_process_cli_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli_autogen.dir/build.make CMakeFiles/main_process_cli_autogen.dir/build
+.PHONY : main_process_cli_autogen/fast
+
+#=============================================================================
+# Target rules for targets named process_ocr_autogen
+
+# Build rule for target.
+process_ocr_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 process_ocr_autogen
+.PHONY : process_ocr_autogen
+
+# fast build rule for target.
+process_ocr_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr_autogen.dir/build.make CMakeFiles/process_ocr_autogen.dir/build
+.PHONY : process_ocr_autogen/fast
+
+#=============================================================================
+# Target rules for targets named process_fatigue_autogen
+
+# Build rule for target.
+process_fatigue_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 process_fatigue_autogen
+.PHONY : process_fatigue_autogen
+
+# fast build rule for target.
+process_fatigue_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue_autogen.dir/build.make CMakeFiles/process_fatigue_autogen.dir/build
+.PHONY : process_fatigue_autogen/fast
+
+#=============================================================================
+# Target rules for targets named process_defect_autogen
+
+# Build rule for target.
+process_defect_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 process_defect_autogen
+.PHONY : process_defect_autogen
+
+# fast build rule for target.
+process_defect_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect_autogen.dir/build.make CMakeFiles/process_defect_autogen.dir/build
+.PHONY : process_defect_autogen/fast
+
+#=============================================================================
+# Target rules for targets named two_model_camera_demo_autogen
+
+# Build rule for target.
+two_model_camera_demo_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 two_model_camera_demo_autogen
+.PHONY : two_model_camera_demo_autogen
+
+# fast build rule for target.
+two_model_camera_demo_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo_autogen.dir/build.make CMakeFiles/two_model_camera_demo_autogen.dir/build
+.PHONY : two_model_camera_demo_autogen/fast
+
+#=============================================================================
+# Target rules for targets named camera_capture_service_autogen
+
+# Build rule for target.
+camera_capture_service_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 camera_capture_service_autogen
+.PHONY : camera_capture_service_autogen
+
+# fast build rule for target.
+camera_capture_service_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service_autogen.dir/build.make CMakeFiles/camera_capture_service_autogen.dir/build
+.PHONY : camera_capture_service_autogen/fast
+
+#=============================================================================
+# Target rules for targets named main_process_autogen
+
+# Build rule for target.
+main_process_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 main_process_autogen
+.PHONY : main_process_autogen
+
+# fast build rule for target.
+main_process_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_autogen.dir/build.make CMakeFiles/main_process_autogen.dir/build
+.PHONY : main_process_autogen/fast
+
+#=============================================================================
+# Target rules for targets named integrated_inspection_hmi_autogen
+
+# Build rule for target.
+integrated_inspection_hmi_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 integrated_inspection_hmi_autogen
+.PHONY : integrated_inspection_hmi_autogen
+
+# fast build rule for target.
+integrated_inspection_hmi_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi_autogen.dir/build.make CMakeFiles/integrated_inspection_hmi_autogen.dir/build
+.PHONY : integrated_inspection_hmi_autogen/fast
+
+#=============================================================================
 # Target rules for targets named fileutils
 
 # Build rule for target.
@@ -290,6 +420,259 @@ audioutils: cmake_check_build_system
 audioutils/fast:
 	$(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils.dir/build.make chip_utils.out/CMakeFiles/audioutils.dir/build
 .PHONY : audioutils/fast
+
+#=============================================================================
+# Target rules for targets named fileutils_autogen
+
+# Build rule for target.
+fileutils_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fileutils_autogen
+.PHONY : fileutils_autogen
+
+# fast build rule for target.
+fileutils_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/fileutils_autogen.dir/build.make chip_utils.out/CMakeFiles/fileutils_autogen.dir/build
+.PHONY : fileutils_autogen/fast
+
+#=============================================================================
+# Target rules for targets named imagedrawing_autogen
+
+# Build rule for target.
+imagedrawing_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 imagedrawing_autogen
+.PHONY : imagedrawing_autogen
+
+# fast build rule for target.
+imagedrawing_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/build.make chip_utils.out/CMakeFiles/imagedrawing_autogen.dir/build
+.PHONY : imagedrawing_autogen/fast
+
+#=============================================================================
+# Target rules for targets named imageutils_autogen
+
+# Build rule for target.
+imageutils_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 imageutils_autogen
+.PHONY : imageutils_autogen
+
+# fast build rule for target.
+imageutils_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/imageutils_autogen.dir/build.make chip_utils.out/CMakeFiles/imageutils_autogen.dir/build
+.PHONY : imageutils_autogen/fast
+
+#=============================================================================
+# Target rules for targets named audioutils_autogen
+
+# Build rule for target.
+audioutils_autogen: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 audioutils_autogen
+.PHONY : audioutils_autogen
+
+# fast build rule for target.
+audioutils_autogen/fast:
+	$(MAKE) $(MAKESILENT) -f chip_utils.out/CMakeFiles/audioutils_autogen.dir/build.make chip_utils.out/CMakeFiles/audioutils_autogen.dir/build
+.PHONY : audioutils_autogen/fast
+
+camera_capture_service_autogen/mocs_compilation.o: camera_capture_service_autogen/mocs_compilation.cpp.o
+.PHONY : camera_capture_service_autogen/mocs_compilation.o
+
+# target to build an object file
+camera_capture_service_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o
+.PHONY : camera_capture_service_autogen/mocs_compilation.cpp.o
+
+camera_capture_service_autogen/mocs_compilation.i: camera_capture_service_autogen/mocs_compilation.cpp.i
+.PHONY : camera_capture_service_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+camera_capture_service_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.i
+.PHONY : camera_capture_service_autogen/mocs_compilation.cpp.i
+
+camera_capture_service_autogen/mocs_compilation.s: camera_capture_service_autogen/mocs_compilation.cpp.s
+.PHONY : camera_capture_service_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+camera_capture_service_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.s
+.PHONY : camera_capture_service_autogen/mocs_compilation.cpp.s
+
+integrated_inspection_hmi_autogen/mocs_compilation.o: integrated_inspection_hmi_autogen/mocs_compilation.cpp.o
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.o
+
+# target to build an object file
+integrated_inspection_hmi_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/integrated_inspection_hmi_autogen/mocs_compilation.cpp.o
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.cpp.o
+
+integrated_inspection_hmi_autogen/mocs_compilation.i: integrated_inspection_hmi_autogen/mocs_compilation.cpp.i
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+integrated_inspection_hmi_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/integrated_inspection_hmi_autogen/mocs_compilation.cpp.i
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.cpp.i
+
+integrated_inspection_hmi_autogen/mocs_compilation.s: integrated_inspection_hmi_autogen/mocs_compilation.cpp.s
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+integrated_inspection_hmi_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/integrated_inspection_hmi_autogen/mocs_compilation.cpp.s
+.PHONY : integrated_inspection_hmi_autogen/mocs_compilation.cpp.s
+
+main_process_autogen/mocs_compilation.o: main_process_autogen/mocs_compilation.cpp.o
+.PHONY : main_process_autogen/mocs_compilation.o
+
+# target to build an object file
+main_process_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.o
+.PHONY : main_process_autogen/mocs_compilation.cpp.o
+
+main_process_autogen/mocs_compilation.i: main_process_autogen/mocs_compilation.cpp.i
+.PHONY : main_process_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+main_process_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.i
+.PHONY : main_process_autogen/mocs_compilation.cpp.i
+
+main_process_autogen/mocs_compilation.s: main_process_autogen/mocs_compilation.cpp.s
+.PHONY : main_process_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+main_process_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.s
+.PHONY : main_process_autogen/mocs_compilation.cpp.s
+
+main_process_cli_autogen/mocs_compilation.o: main_process_cli_autogen/mocs_compilation.cpp.o
+.PHONY : main_process_cli_autogen/mocs_compilation.o
+
+# target to build an object file
+main_process_cli_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/main_process_cli_autogen/mocs_compilation.cpp.o
+.PHONY : main_process_cli_autogen/mocs_compilation.cpp.o
+
+main_process_cli_autogen/mocs_compilation.i: main_process_cli_autogen/mocs_compilation.cpp.i
+.PHONY : main_process_cli_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+main_process_cli_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/main_process_cli_autogen/mocs_compilation.cpp.i
+.PHONY : main_process_cli_autogen/mocs_compilation.cpp.i
+
+main_process_cli_autogen/mocs_compilation.s: main_process_cli_autogen/mocs_compilation.cpp.s
+.PHONY : main_process_cli_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+main_process_cli_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/main_process_cli_autogen/mocs_compilation.cpp.s
+.PHONY : main_process_cli_autogen/mocs_compilation.cpp.s
+
+process_defect_autogen/mocs_compilation.o: process_defect_autogen/mocs_compilation.cpp.o
+.PHONY : process_defect_autogen/mocs_compilation.o
+
+# target to build an object file
+process_defect_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.o
+.PHONY : process_defect_autogen/mocs_compilation.cpp.o
+
+process_defect_autogen/mocs_compilation.i: process_defect_autogen/mocs_compilation.cpp.i
+.PHONY : process_defect_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+process_defect_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.i
+.PHONY : process_defect_autogen/mocs_compilation.cpp.i
+
+process_defect_autogen/mocs_compilation.s: process_defect_autogen/mocs_compilation.cpp.s
+.PHONY : process_defect_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+process_defect_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/process_defect_autogen/mocs_compilation.cpp.s
+.PHONY : process_defect_autogen/mocs_compilation.cpp.s
+
+process_fatigue_autogen/mocs_compilation.o: process_fatigue_autogen/mocs_compilation.cpp.o
+.PHONY : process_fatigue_autogen/mocs_compilation.o
+
+# target to build an object file
+process_fatigue_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.o
+.PHONY : process_fatigue_autogen/mocs_compilation.cpp.o
+
+process_fatigue_autogen/mocs_compilation.i: process_fatigue_autogen/mocs_compilation.cpp.i
+.PHONY : process_fatigue_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+process_fatigue_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.i
+.PHONY : process_fatigue_autogen/mocs_compilation.cpp.i
+
+process_fatigue_autogen/mocs_compilation.s: process_fatigue_autogen/mocs_compilation.cpp.s
+.PHONY : process_fatigue_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+process_fatigue_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/process_fatigue_autogen/mocs_compilation.cpp.s
+.PHONY : process_fatigue_autogen/mocs_compilation.cpp.s
+
+process_ocr_autogen/mocs_compilation.o: process_ocr_autogen/mocs_compilation.cpp.o
+.PHONY : process_ocr_autogen/mocs_compilation.o
+
+# target to build an object file
+process_ocr_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o
+.PHONY : process_ocr_autogen/mocs_compilation.cpp.o
+
+process_ocr_autogen/mocs_compilation.i: process_ocr_autogen/mocs_compilation.cpp.i
+.PHONY : process_ocr_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+process_ocr_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.i
+.PHONY : process_ocr_autogen/mocs_compilation.cpp.i
+
+process_ocr_autogen/mocs_compilation.s: process_ocr_autogen/mocs_compilation.cpp.s
+.PHONY : process_ocr_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+process_ocr_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.s
+.PHONY : process_ocr_autogen/mocs_compilation.cpp.s
+
+src/audio_alert.o: src/audio_alert.cc.o
+.PHONY : src/audio_alert.o
+
+# target to build an object file
+src/audio_alert.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/audio_alert.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/audio_alert.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/audio_alert.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/audio_alert.cc.o
+.PHONY : src/audio_alert.cc.o
+
+src/audio_alert.i: src/audio_alert.cc.i
+.PHONY : src/audio_alert.i
+
+# target to preprocess a source file
+src/audio_alert.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/audio_alert.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/audio_alert.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/audio_alert.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/audio_alert.cc.i
+.PHONY : src/audio_alert.cc.i
+
+src/audio_alert.s: src/audio_alert.cc.s
+.PHONY : src/audio_alert.s
+
+# target to generate assembly for a file
+src/audio_alert.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/audio_alert.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/audio_alert.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/audio_alert.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/audio_alert.cc.s
+.PHONY : src/audio_alert.cc.s
 
 src/camera.o: src/camera.cc.o
 .PHONY : src/camera.o
@@ -345,6 +728,36 @@ src/camera_capture_service.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_capture_service.dir/build.make CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.s
 .PHONY : src/camera_capture_service.cc.s
 
+src/cloud_uploader.o: src/cloud_uploader.cc.o
+.PHONY : src/cloud_uploader.o
+
+# target to build an object file
+src/cloud_uploader.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/cloud_uploader.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/cloud_uploader.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/cloud_uploader.cc.o
+.PHONY : src/cloud_uploader.cc.o
+
+src/cloud_uploader.i: src/cloud_uploader.cc.i
+.PHONY : src/cloud_uploader.i
+
+# target to preprocess a source file
+src/cloud_uploader.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/cloud_uploader.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/cloud_uploader.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/cloud_uploader.cc.i
+.PHONY : src/cloud_uploader.cc.i
+
+src/cloud_uploader.s: src/cloud_uploader.cc.s
+.PHONY : src/cloud_uploader.s
+
+# target to generate assembly for a file
+src/cloud_uploader.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/cloud_uploader.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/cloud_uploader.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/cloud_uploader.cc.s
+.PHONY : src/cloud_uploader.cc.s
+
 src/defect_engine.o: src/defect_engine.cc.o
 .PHONY : src/defect_engine.o
 
@@ -393,6 +806,87 @@ src/fatigue_engine.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/fatigue_engine.cc.s
 .PHONY : src/fatigue_engine.cc.s
 
+src/hmi_main.o: src/hmi_main.cc.o
+.PHONY : src/hmi_main.o
+
+# target to build an object file
+src/hmi_main.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_main.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_main.cc.o
+.PHONY : src/hmi_main.cc.o
+
+src/hmi_main.i: src/hmi_main.cc.i
+.PHONY : src/hmi_main.i
+
+# target to preprocess a source file
+src/hmi_main.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_main.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_main.cc.i
+.PHONY : src/hmi_main.cc.i
+
+src/hmi_main.s: src/hmi_main.cc.s
+.PHONY : src/hmi_main.s
+
+# target to generate assembly for a file
+src/hmi_main.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_main.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_main.cc.s
+.PHONY : src/hmi_main.cc.s
+
+src/hmi_mainwindow.o: src/hmi_mainwindow.cc.o
+.PHONY : src/hmi_mainwindow.o
+
+# target to build an object file
+src/hmi_mainwindow.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_mainwindow.cc.o
+.PHONY : src/hmi_mainwindow.cc.o
+
+src/hmi_mainwindow.i: src/hmi_mainwindow.cc.i
+.PHONY : src/hmi_mainwindow.i
+
+# target to preprocess a source file
+src/hmi_mainwindow.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_mainwindow.cc.i
+.PHONY : src/hmi_mainwindow.cc.i
+
+src/hmi_mainwindow.s: src/hmi_mainwindow.cc.s
+.PHONY : src/hmi_mainwindow.s
+
+# target to generate assembly for a file
+src/hmi_mainwindow.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_mainwindow.cc.s
+.PHONY : src/hmi_mainwindow.cc.s
+
+src/hmi_ocr_detector.o: src/hmi_ocr_detector.cc.o
+.PHONY : src/hmi_ocr_detector.o
+
+# target to build an object file
+src/hmi_ocr_detector.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_ocr_detector.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_ocr_detector.cc.o
+.PHONY : src/hmi_ocr_detector.cc.o
+
+src/hmi_ocr_detector.i: src/hmi_ocr_detector.cc.i
+.PHONY : src/hmi_ocr_detector.i
+
+# target to preprocess a source file
+src/hmi_ocr_detector.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_ocr_detector.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_ocr_detector.cc.i
+.PHONY : src/hmi_ocr_detector.cc.i
+
+src/hmi_ocr_detector.s: src/hmi_ocr_detector.cc.s
+.PHONY : src/hmi_ocr_detector.s
+
+# target to generate assembly for a file
+src/hmi_ocr_detector.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/hmi_ocr_detector.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/hmi_ocr_detector.cc.s
+.PHONY : src/hmi_ocr_detector.cc.s
+
 src/ipc_manager.o: src/ipc_manager.cc.o
 .PHONY : src/ipc_manager.o
 
@@ -428,9 +922,12 @@ src/logger.o: src/logger.cc.o
 
 # target to build an object file
 src/logger.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/logger.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/logger.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/logger.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/logger.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/logger.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/logger.cc.o
 .PHONY : src/logger.cc.o
 
 src/logger.i: src/logger.cc.i
@@ -438,9 +935,12 @@ src/logger.i: src/logger.cc.i
 
 # target to preprocess a source file
 src/logger.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/logger.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/logger.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/logger.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/logger.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/logger.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/logger.cc.i
 .PHONY : src/logger.cc.i
 
 src/logger.s: src/logger.cc.s
@@ -448,9 +948,12 @@ src/logger.s: src/logger.cc.s
 
 # target to generate assembly for a file
 src/logger.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/logger.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/logger.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/logger.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/logger.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/logger.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/logger.cc.s
 .PHONY : src/logger.cc.s
 
 src/main.o: src/main.cc.o
@@ -458,7 +961,7 @@ src/main.o: src/main.cc.o
 
 # target to build an object file
 src/main.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/main.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/main.cc.o
 .PHONY : src/main.cc.o
 
 src/main.i: src/main.cc.i
@@ -466,7 +969,7 @@ src/main.i: src/main.cc.i
 
 # target to preprocess a source file
 src/main.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/main.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/main.cc.i
 .PHONY : src/main.cc.i
 
 src/main.s: src/main.cc.s
@@ -474,7 +977,7 @@ src/main.s: src/main.cc.s
 
 # target to generate assembly for a file
 src/main.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/main.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/main.cc.s
 .PHONY : src/main.cc.s
 
 src/model_engine.o: src/model_engine.cc.o
@@ -638,9 +1141,12 @@ src/serial_port.o: src/serial_port.cc.o
 
 # target to build an object file
 src/serial_port.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/serial_port.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/serial_port.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/serial_port.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/serial_port.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/serial_port.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/serial_port.cc.o
 .PHONY : src/serial_port.cc.o
 
 src/serial_port.i: src/serial_port.cc.i
@@ -648,9 +1154,12 @@ src/serial_port.i: src/serial_port.cc.i
 
 # target to preprocess a source file
 src/serial_port.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/serial_port.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/serial_port.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/serial_port.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/serial_port.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/serial_port.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/serial_port.cc.i
 .PHONY : src/serial_port.cc.i
 
 src/serial_port.s: src/serial_port.cc.s
@@ -658,9 +1167,12 @@ src/serial_port.s: src/serial_port.cc.s
 
 # target to generate assembly for a file
 src/serial_port.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/src/serial_port.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/serial_port.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/src/serial_port.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/serial_port.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/serial_port.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/serial_port.cc.s
 .PHONY : src/serial_port.cc.s
 
 src/thread_pool.o: src/thread_pool.cc.o
@@ -717,12 +1229,65 @@ src/two_model_camera_demo.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/src/two_model_camera_demo.cc.s
 .PHONY : src/two_model_camera_demo.cc.s
 
+src/yolo_detector.o: src/yolo_detector.cc.o
+.PHONY : src/yolo_detector.o
+
+# target to build an object file
+src/yolo_detector.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/yolo_detector.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/yolo_detector.cc.o
+.PHONY : src/yolo_detector.cc.o
+
+src/yolo_detector.i: src/yolo_detector.cc.i
+.PHONY : src/yolo_detector.i
+
+# target to preprocess a source file
+src/yolo_detector.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/yolo_detector.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/yolo_detector.cc.i
+.PHONY : src/yolo_detector.cc.i
+
+src/yolo_detector.s: src/yolo_detector.cc.s
+.PHONY : src/yolo_detector.s
+
+# target to generate assembly for a file
+src/yolo_detector.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/yolo_detector.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/src/yolo_detector.cc.s
+.PHONY : src/yolo_detector.cc.s
+
+two_model_camera_demo_autogen/mocs_compilation.o: two_model_camera_demo_autogen/mocs_compilation.cpp.o
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.o
+
+# target to build an object file
+two_model_camera_demo_autogen/mocs_compilation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.o
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.cpp.o
+
+two_model_camera_demo_autogen/mocs_compilation.i: two_model_camera_demo_autogen/mocs_compilation.cpp.i
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.i
+
+# target to preprocess a source file
+two_model_camera_demo_autogen/mocs_compilation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.i
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.cpp.i
+
+two_model_camera_demo_autogen/mocs_compilation.s: two_model_camera_demo_autogen/mocs_compilation.cpp.s
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.s
+
+# target to generate assembly for a file
+two_model_camera_demo_autogen/mocs_compilation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/two_model_camera_demo_autogen/mocs_compilation.cpp.s
+.PHONY : two_model_camera_demo_autogen/mocs_compilation.cpp.s
+
 userdata/sdcard/workspace/proj/chip/cpp/clipper.o: userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/clipper.o
 
 # target to build an object file
 userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o
 
 userdata/sdcard/workspace/proj/chip/cpp/clipper.i: userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i
@@ -730,7 +1295,9 @@ userdata/sdcard/workspace/proj/chip/cpp/clipper.i: userdata/sdcard/workspace/pro
 
 # target to preprocess a source file
 userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.i
 
 userdata/sdcard/workspace/proj/chip/cpp/clipper.s: userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s
@@ -738,7 +1305,9 @@ userdata/sdcard/workspace/proj/chip/cpp/clipper.s: userdata/sdcard/workspace/pro
 
 # target to generate assembly for a file
 userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.s
 
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.o: userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o
@@ -746,7 +1315,9 @@ userdata/sdcard/workspace/proj/chip/cpp/postprocess.o: userdata/sdcard/workspace
 
 # target to build an object file
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o
 
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.i: userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i
@@ -754,7 +1325,9 @@ userdata/sdcard/workspace/proj/chip/cpp/postprocess.i: userdata/sdcard/workspace
 
 # target to preprocess a source file
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.i
 
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.s: userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s
@@ -762,7 +1335,9 @@ userdata/sdcard/workspace/proj/chip/cpp/postprocess.s: userdata/sdcard/workspace
 
 # target to generate assembly for a file
 userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.s
 
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.o: userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o
@@ -770,7 +1345,9 @@ userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.o: userdata/sdcard/worksp
 
 # target to build an object file
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o
 
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.i: userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i
@@ -778,7 +1355,9 @@ userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.i: userdata/sdcard/worksp
 
 # target to preprocess a source file
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.i
 
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.s: userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s
@@ -786,7 +1365,9 @@ userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.s: userdata/sdcard/worksp
 
 # target to generate assembly for a file
 userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s
 .PHONY : userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.s
 
 # Help Target
@@ -801,28 +1382,78 @@ help:
 	@echo "... install/strip"
 	@echo "... list_install_components"
 	@echo "... rebuild_cache"
+	@echo "... audioutils_autogen"
+	@echo "... camera_capture_service_autogen"
+	@echo "... fileutils_autogen"
+	@echo "... imagedrawing_autogen"
+	@echo "... imageutils_autogen"
+	@echo "... integrated_inspection_hmi_autogen"
+	@echo "... main_process_autogen"
+	@echo "... main_process_cli_autogen"
+	@echo "... process_defect_autogen"
+	@echo "... process_fatigue_autogen"
+	@echo "... process_ocr_autogen"
+	@echo "... two_model_camera_demo_autogen"
 	@echo "... audioutils"
 	@echo "... camera_capture_service"
 	@echo "... fileutils"
 	@echo "... imagedrawing"
 	@echo "... imageutils"
+	@echo "... integrated_inspection_hmi"
 	@echo "... main_process"
+	@echo "... main_process_cli"
 	@echo "... process_defect"
 	@echo "... process_fatigue"
 	@echo "... process_ocr"
 	@echo "... two_model_camera_demo"
+	@echo "... camera_capture_service_autogen/mocs_compilation.o"
+	@echo "... camera_capture_service_autogen/mocs_compilation.i"
+	@echo "... camera_capture_service_autogen/mocs_compilation.s"
+	@echo "... integrated_inspection_hmi_autogen/mocs_compilation.o"
+	@echo "... integrated_inspection_hmi_autogen/mocs_compilation.i"
+	@echo "... integrated_inspection_hmi_autogen/mocs_compilation.s"
+	@echo "... main_process_autogen/mocs_compilation.o"
+	@echo "... main_process_autogen/mocs_compilation.i"
+	@echo "... main_process_autogen/mocs_compilation.s"
+	@echo "... main_process_cli_autogen/mocs_compilation.o"
+	@echo "... main_process_cli_autogen/mocs_compilation.i"
+	@echo "... main_process_cli_autogen/mocs_compilation.s"
+	@echo "... process_defect_autogen/mocs_compilation.o"
+	@echo "... process_defect_autogen/mocs_compilation.i"
+	@echo "... process_defect_autogen/mocs_compilation.s"
+	@echo "... process_fatigue_autogen/mocs_compilation.o"
+	@echo "... process_fatigue_autogen/mocs_compilation.i"
+	@echo "... process_fatigue_autogen/mocs_compilation.s"
+	@echo "... process_ocr_autogen/mocs_compilation.o"
+	@echo "... process_ocr_autogen/mocs_compilation.i"
+	@echo "... process_ocr_autogen/mocs_compilation.s"
+	@echo "... src/audio_alert.o"
+	@echo "... src/audio_alert.i"
+	@echo "... src/audio_alert.s"
 	@echo "... src/camera.o"
 	@echo "... src/camera.i"
 	@echo "... src/camera.s"
 	@echo "... src/camera_capture_service.o"
 	@echo "... src/camera_capture_service.i"
 	@echo "... src/camera_capture_service.s"
+	@echo "... src/cloud_uploader.o"
+	@echo "... src/cloud_uploader.i"
+	@echo "... src/cloud_uploader.s"
 	@echo "... src/defect_engine.o"
 	@echo "... src/defect_engine.i"
 	@echo "... src/defect_engine.s"
 	@echo "... src/fatigue_engine.o"
 	@echo "... src/fatigue_engine.i"
 	@echo "... src/fatigue_engine.s"
+	@echo "... src/hmi_main.o"
+	@echo "... src/hmi_main.i"
+	@echo "... src/hmi_main.s"
+	@echo "... src/hmi_mainwindow.o"
+	@echo "... src/hmi_mainwindow.i"
+	@echo "... src/hmi_mainwindow.s"
+	@echo "... src/hmi_ocr_detector.o"
+	@echo "... src/hmi_ocr_detector.i"
+	@echo "... src/hmi_ocr_detector.s"
 	@echo "... src/ipc_manager.o"
 	@echo "... src/ipc_manager.i"
 	@echo "... src/ipc_manager.s"
@@ -859,6 +1490,12 @@ help:
 	@echo "... src/two_model_camera_demo.o"
 	@echo "... src/two_model_camera_demo.i"
 	@echo "... src/two_model_camera_demo.s"
+	@echo "... src/yolo_detector.o"
+	@echo "... src/yolo_detector.i"
+	@echo "... src/yolo_detector.s"
+	@echo "... two_model_camera_demo_autogen/mocs_compilation.o"
+	@echo "... two_model_camera_demo_autogen/mocs_compilation.i"
+	@echo "... two_model_camera_demo_autogen/mocs_compilation.s"
 	@echo "... userdata/sdcard/workspace/proj/chip/cpp/clipper.o"
 	@echo "... userdata/sdcard/workspace/proj/chip/cpp/clipper.i"
 	@echo "... userdata/sdcard/workspace/proj/chip/cpp/clipper.s"

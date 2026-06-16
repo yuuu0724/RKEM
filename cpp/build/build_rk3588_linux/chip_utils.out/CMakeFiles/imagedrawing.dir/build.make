@@ -69,10 +69,24 @@ include chip_utils.out/CMakeFiles/imagedrawing.dir/progress.make
 # Include the compile flags for this target's objects.
 include chip_utils.out/CMakeFiles/imagedrawing.dir/flags.make
 
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o: chip_utils.out/CMakeFiles/imagedrawing.dir/flags.make
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o: chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o: chip_utils.out/CMakeFiles/imagedrawing.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o -MF CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp
+
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.i"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp > CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.i
+
+chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.s"
+	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/imagedrawing_autogen/mocs_compilation.cpp -o CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.s
+
 chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o: chip_utils.out/CMakeFiles/imagedrawing.dir/flags.make
 chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o: /userdata/sdcard/workspace/proj/chip/utils/image_drawing.c
 chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o: chip_utils.out/CMakeFiles/imagedrawing.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o"
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && /usr/bin/aarch64-linux-gnu-gcc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o -MF CMakeFiles/imagedrawing.dir/image_drawing.c.o.d -o CMakeFiles/imagedrawing.dir/image_drawing.c.o -c /userdata/sdcard/workspace/proj/chip/utils/image_drawing.c
 
 chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.i: cmake_force
@@ -85,15 +99,17 @@ chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.s: cmake_force
 
 # Object files for target imagedrawing
 imagedrawing_OBJECTS = \
+"CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/imagedrawing.dir/image_drawing.c.o"
 
 # External object files for target imagedrawing
 imagedrawing_EXTERNAL_OBJECTS =
 
+chip_utils.out/libimagedrawing.a: chip_utils.out/CMakeFiles/imagedrawing.dir/imagedrawing_autogen/mocs_compilation.cpp.o
 chip_utils.out/libimagedrawing.a: chip_utils.out/CMakeFiles/imagedrawing.dir/image_drawing.c.o
 chip_utils.out/libimagedrawing.a: chip_utils.out/CMakeFiles/imagedrawing.dir/build.make
 chip_utils.out/libimagedrawing.a: chip_utils.out/CMakeFiles/imagedrawing.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C static library libimagedrawing.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library libimagedrawing.a"
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && $(CMAKE_COMMAND) -P CMakeFiles/imagedrawing.dir/cmake_clean_target.cmake
 	cd /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/imagedrawing.dir/link.txt --verbose=$(VERBOSE)
 

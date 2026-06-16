@@ -69,10 +69,24 @@ include CMakeFiles/camera_capture_service.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/camera_capture_service.dir/flags.make
 
+CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o: CMakeFiles/camera_capture_service.dir/flags.make
+CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o: camera_capture_service_autogen/mocs_compilation.cpp
+CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o: CMakeFiles/camera_capture_service.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o -MF CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o.d -o CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service_autogen/mocs_compilation.cpp
+
+CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.i"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service_autogen/mocs_compilation.cpp > CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.i
+
+CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.s"
+	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/camera_capture_service_autogen/mocs_compilation.cpp -o CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.s
+
 CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o: CMakeFiles/camera_capture_service.dir/flags.make
 CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o: ../../src/camera_capture_service.cc
 CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o: CMakeFiles/camera_capture_service.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o"
 	/usr/bin/aarch64-linux-gnu-g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o -MF CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o.d -o CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o -c /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/camera_capture_service.cc
 
 CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.i: cmake_force
@@ -85,11 +99,13 @@ CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.s: cmake_for
 
 # Object files for target camera_capture_service
 camera_capture_service_OBJECTS = \
+"CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o" \
 "CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o"
 
 # External object files for target camera_capture_service
 camera_capture_service_EXTERNAL_OBJECTS =
 
+camera_capture_service: CMakeFiles/camera_capture_service.dir/camera_capture_service_autogen/mocs_compilation.cpp.o
 camera_capture_service: CMakeFiles/camera_capture_service.dir/src/camera_capture_service.cc.o
 camera_capture_service: CMakeFiles/camera_capture_service.dir/build.make
 camera_capture_service: /usr/lib/aarch64-linux-gnu/libopencv_stitching.so.4.5.4d
@@ -147,7 +163,7 @@ camera_capture_service: /usr/lib/aarch64-linux-gnu/libopencv_photo.so.4.5.4d
 camera_capture_service: /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d
 camera_capture_service: /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d
 camera_capture_service: CMakeFiles/camera_capture_service.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable camera_capture_service"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable camera_capture_service"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/camera_capture_service.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

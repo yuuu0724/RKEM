@@ -1,4 +1,5 @@
 #include "common.h"
+#include "audio_alert.h"
 #include "logger.h"
 #include "fatigue_engine.h"
 #include "camera.h"
@@ -21,6 +22,7 @@
 // ============================================================
 
 static std::atomic<bool> g_running(true);
+static std::atomic<bool> g_previous_fatigue(false);
 
 static void SignalHandler(int sig) {
     g_running = false;
@@ -178,6 +180,10 @@ int main(int argc, char* argv[]) {
                 // 执行疲劳检测
                 if (fatigue_engine.Detect(frame.data, frame.width, frame.height,
                                           frame.channels, result)) {
+                    const bool was_fatigue = g_previous_fatigue.exchange(result.is_fatigue);
+                    if (result.is_fatigue && !was_fatigue) {
+                        AudioAlert::PlayFatigueWarningAsync();
+                    }
                     // 发送结果
                     ipc.SendFatigueResult(result);
                     Logger::GetInstance().LogFatigueResult(result);

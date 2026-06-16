@@ -1,13 +1,16 @@
 #include "hmi_mainwindow.h"
+#include "audio_alert.h"
 #include "hmi_ocr_detector.h"
 #include "yolo_detector.h"
 
 #include <QApplication>
+#include <QByteArray>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDialog>
 #include <QDir>
 #include <QDoubleValidator>
+#include <QFileInfo>
 #include <QFrame>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -15,16 +18,22 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QLocale>
+#include <QMessageBox>
 #include <QMetaObject>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QSignalBlocker>
+#include <QSqlError>
+#include <QSqlQuery>
 #include <QStyle>
+#include <QThread>
 #include <QTimer>
 #include <QTime>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include <opencv2/imgproc.hpp>
@@ -37,6 +46,9 @@
 #include <cstdio>
 #include <fstream>
 #include <mutex>
+#include <sstream>
+#include <string>
+#include <utility>
 
 #include <sys/wait.h>
 #include <unistd.h>
@@ -57,6 +69,18 @@ constexpr int kDetectionInputSize = 640;
 constexpr float kYoloThreshold = 0.15f;
 constexpr double kCenterVisionMin = 0.2;
 constexpr double kCenterVisionMax = 0.8;
+constexpr const char *kChipCameraDevice = "/dev/video21";
+constexpr const char *kFatigueCameraDevice = "/dev/video23";
+constexpr uint8_t kEmployeeFrameHeader1 = 0xAA;
+constexpr uint8_t kEmployeeFrameHeader2 = 0x55;
+constexpr uint8_t kEmployeeFrameTail = 0xFF;
+constexpr uint16_t kEmployeeMaxDataLen = 256;
+constexpr int kEmployeeOperationTimeoutMs = 10000;
+constexpr uint8_t kMotorMoveCommand = 0x20;
+constexpr uint8_t kMotorBackCommand = 0x22;
+constexpr uint8_t kMotorInterruptedResponse = 0x23;
+constexpr uint8_t kMotorAutoRunCommand = 0x24;
+constexpr uint8_t kMotorMoveDoneCommand = 0x21;
 std::mutex g_detectorInitMutex;
 
 struct RawFrameHeader {
@@ -67,9 +91,259 @@ struct RawFrameHeader {
     int bytes;
 };
 
+struct EmployeeFrame {
+    uint8_t command = 0xFF;
+    QByteArray payload;
+};
+
 QString metricText(int value)
 {
     return QLocale(QLocale::Chinese).toString(value);
+}
+
+std::string toUtf8Std(const QString &value)
+{
+    const QByteArray bytes = value.toUtf8();
+    return std::string(bytes.constData(), static_cast<size_t>(bytes.size()));
+}
+
+std::string jsonString(const QString &value)
+{
+    return CloudUploader::JsonString(toUtf8Std(value));
+}
+
+std::string jsonBool(bool value)
+{
+    return value ? "true" : "false";
+}
+
+void appendBe32(QByteArray &data, uint32_t value)
+{
+    data.append(static_cast<char>((value >> 24) & 0xFF));
+    data.append(static_cast<char>((value >> 16) & 0xFF));
+    data.append(static_cast<char>((value >> 8) & 0xFF));
+    data.append(static_cast<char>(value & 0xFF));
+}
+
+bool readBe32(const QByteArray &data, int offset, uint32_t &value)
+{
+    if (offset < 0 || offset + 4 > data.size()) {
+        return false;
+    }
+    value = (static_cast<uint32_t>(static_cast<uint8_t>(data.at(offset))) << 24) |
+            (static_cast<uint32_t>(static_cast<uint8_t>(data.at(offset + 1))) << 16) |
+            (static_cast<uint32_t>(static_cast<uint8_t>(data.at(offset + 2))) << 8) |
+            static_cast<uint32_t>(static_cast<uint8_t>(data.at(offset + 3)));
+    return true;
+}
+
+uint16_t employeeCrc16(const uint8_t *data, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t i = 0; i < len; ++i) {
+        crc ^= static_cast<uint16_t>(data[i]);
+        for (int bit = 0; bit < 8; ++bit) {
+            if ((crc & 0x0001) != 0) {
+                crc = static_cast<uint16_t>((crc >> 1) ^ 0xA001);
+            } else {
+                crc = static_cast<uint16_t>(crc >> 1);
+            }
+        }
+    }
+    return crc;
+}
+
+QByteArray buildEmployeeFrame(uint8_t command, const QByteArray &payload)
+{
+    if (payload.size() > kEmployeeMaxDataLen) {
+        return {};
+    }
+
+    QByteArray frame;
+    frame.reserve(8 + payload.size());
+    frame.append(static_cast<char>(kEmployeeFrameHeader1));
+    frame.append(static_cast<char>(kEmployeeFrameHeader2));
+    frame.append(static_cast<char>(command));
+    frame.append(static_cast<char>((payload.size() >> 8) & 0xFF));
+    frame.append(static_cast<char>(payload.size() & 0xFF));
+    frame.append(payload);
+
+    const uint16_t crc = employeeCrc16(reinterpret_cast<const uint8_t *>(frame.constData() + 2),
+                                      static_cast<uint16_t>(1 + 2 + payload.size()));
+    frame.append(static_cast<char>((crc >> 8) & 0xFF));
+    frame.append(static_cast<char>(crc & 0xFF));
+    frame.append(static_cast<char>(kEmployeeFrameTail));
+    return frame;
+}
+
+QByteArray buildEmployeeEnrollPayload(uint32_t employeeId, const QString &name)
+{
+    QByteArray payload;
+    appendBe32(payload, employeeId);
+    const QByteArray nameBytes = name.toUtf8().left(32);
+    payload.append(nameBytes);
+    return payload;
+}
+
+QByteArray extractEmployeeFrames(QByteArray &buffer, QVector<EmployeeFrame> &frames, QVector<uint8_t> &motorResponses)
+{
+    motorResponses.clear();
+    QByteArray textBytes;
+    while (!buffer.isEmpty()) {
+        int header = -1;
+        for (int i = 0; i + 1 < buffer.size(); ++i) {
+            if (static_cast<uint8_t>(buffer.at(i)) == kEmployeeFrameHeader1 &&
+                static_cast<uint8_t>(buffer.at(i + 1)) == kEmployeeFrameHeader2) {
+                header = i;
+                break;
+            }
+        }
+
+        if (header < 0) {
+            const bool keepPossibleHeader = static_cast<uint8_t>(buffer.back()) == kEmployeeFrameHeader1;
+            const int textLen = keepPossibleHeader ? buffer.size() - 1 : buffer.size();
+            if (textLen > 0) {
+                textBytes.append(buffer.left(textLen));
+                buffer.remove(0, textLen);
+            }
+            break;
+        }
+
+        if (header > 0) {
+            textBytes.append(buffer.left(header));
+            buffer.remove(0, header);
+        }
+
+        if (buffer.size() >= 4 &&
+            static_cast<uint8_t>(buffer.at(3)) == kEmployeeFrameTail) {
+            const uint8_t shortCommand = static_cast<uint8_t>(buffer.at(2));
+            if (shortCommand == kMotorMoveCommand ||
+                shortCommand == kMotorMoveDoneCommand ||
+                shortCommand == kMotorBackCommand ||
+                shortCommand == kMotorInterruptedResponse ||
+                shortCommand == kMotorAutoRunCommand) {
+                if (shortCommand == kMotorMoveDoneCommand ||
+                    shortCommand == kMotorBackCommand ||
+                    shortCommand == kMotorInterruptedResponse) {
+                    motorResponses.append(shortCommand);
+                }
+                buffer.remove(0, 4);
+                continue;
+            }
+        }
+
+        if (buffer.size() < 5) {
+            break;
+        }
+
+        const uint16_t dataLen = static_cast<uint16_t>(
+            (static_cast<uint16_t>(static_cast<uint8_t>(buffer.at(3))) << 8) |
+            static_cast<uint16_t>(static_cast<uint8_t>(buffer.at(4))));
+        if (dataLen > kEmployeeMaxDataLen) {
+            buffer.remove(0, 1);
+            continue;
+        }
+
+        const int totalLen = 8 + dataLen;
+        if (buffer.size() < totalLen) {
+            break;
+        }
+        if (static_cast<uint8_t>(buffer.at(totalLen - 1)) != kEmployeeFrameTail) {
+            buffer.remove(0, 1);
+            continue;
+        }
+
+        const uint16_t calcCrc = employeeCrc16(reinterpret_cast<const uint8_t *>(buffer.constData() + 2),
+                                              static_cast<uint16_t>(1 + 2 + dataLen));
+        const uint16_t recvCrc = static_cast<uint16_t>(
+            (static_cast<uint16_t>(static_cast<uint8_t>(buffer.at(5 + dataLen))) << 8) |
+            static_cast<uint16_t>(static_cast<uint8_t>(buffer.at(6 + dataLen))));
+        if (calcCrc != recvCrc) {
+            buffer.remove(0, 1);
+            continue;
+        }
+
+        EmployeeFrame frame;
+        frame.command = static_cast<uint8_t>(buffer.at(2));
+        frame.payload = buffer.mid(5, dataLen);
+        frames.append(frame);
+        buffer.remove(0, totalLen);
+    }
+    return textBytes;
+}
+
+QString formatEmployeeTime(qint64 timestamp)
+{
+    if (timestamp <= 0) {
+        return QStringLiteral("-");
+    }
+    return QDateTime::fromSecsSinceEpoch(timestamp).toString(QStringLiteral("yyyy-MM-dd HH:mm:ss"));
+}
+
+QString formatEmployeeShortTime(qint64 timestamp)
+{
+    if (timestamp <= 0) {
+        return QStringLiteral("-");
+    }
+    return QDateTime::fromSecsSinceEpoch(timestamp).toString(QStringLiteral("HH:mm:ss"));
+}
+
+QString formatEmployeeDuration(qint64 seconds)
+{
+    if (seconds <= 0) {
+        return QStringLiteral("-");
+    }
+    const qint64 hours = seconds / 3600;
+    const qint64 minutes = (seconds % 3600) / 60;
+    const qint64 secs = seconds % 60;
+    return QStringLiteral("%1小时%2分%3秒").arg(hours).arg(minutes).arg(secs);
+}
+
+QString employeeEnrollStatusText(uint8_t status)
+{
+    switch (status) {
+        case 0x00: return QStringLiteral("录入成功");
+        case 0x01: return QStringLiteral("人脸录入失败");
+        case 0x02: return QStringLiteral("指纹录入失败");
+        case 0x03: return QStringLiteral("员工ID已存在");
+        case 0x04: return QStringLiteral("存储空间不足");
+        default: return QStringLiteral("未知状态码 %1").arg(status);
+    }
+}
+
+QString employeeCheckinFailText(uint8_t reason)
+{
+    switch (reason) {
+        case 0x01: return QStringLiteral("人脸识别超时");
+        case 0x02: return QStringLiteral("指纹识别超时");
+        case 0x03: return QStringLiteral("人脸和指纹不匹配同一员工");
+        case 0x04: return QStringLiteral("未注册人员");
+        case 0x05: return QStringLiteral("设备忙");
+        case 0x06: return QStringLiteral("该员工已签到");
+        default: return QStringLiteral("未知原因码 %1").arg(reason);
+    }
+}
+
+QString employeeDeviceErrorText(const QByteArray &payload)
+{
+    if (payload.size() != 2) {
+        return QStringLiteral("收到格式错误的错误帧");
+    }
+
+    const uint8_t origCmd = static_cast<uint8_t>(payload.at(0));
+    const uint8_t code = static_cast<uint8_t>(payload.at(1));
+    QString reason;
+    switch (code) {
+        case 0x01: reason = QStringLiteral("帧头错误"); break;
+        case 0x02: reason = QStringLiteral("CRC校验失败"); break;
+        case 0x03: reason = QStringLiteral("命令码未知"); break;
+        case 0x04: reason = QStringLiteral("数据长度错误"); break;
+        case 0x05: reason = QStringLiteral("员工ID不存在"); break;
+        case 0x06: reason = QStringLiteral("员工未签到，无法签退"); break;
+        case 0x07: reason = QStringLiteral("超时无响应"); break;
+        default: reason = QStringLiteral("未知错误码 %1").arg(code); break;
+    }
+    return QStringLiteral("原命令 0x%1：%2").arg(origCmd, 2, 16, QLatin1Char('0')).arg(reason);
 }
 
 void writeHmiAlarmLog(const QString &eventType, const QString &detail)
@@ -133,6 +407,58 @@ bool convertCameraFrameToRgb(const cv::Mat &frame, cv::Mat &rgb)
 
     cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
     return true;
+}
+
+QString printableSerialText(const QString &text)
+{
+    QString out;
+    for (const QChar &ch : text) {
+        if (ch == QLatin1Char('\n')) {
+            out += QStringLiteral("\\n");
+        } else if (ch == QLatin1Char('\r')) {
+            out += QStringLiteral("\\r");
+        } else if (ch == QLatin1Char('\t')) {
+            out += QStringLiteral("\\t");
+        } else if (ch.isPrint()) {
+            out += ch;
+        } else {
+            out += QStringLiteral("\\x%1").arg(ch.unicode(), 2, 16, QLatin1Char('0')).toUpper();
+        }
+    }
+    return out;
+}
+
+QString formatMotorCommand(QString commandTemplate, int currentSlot, int nextSlot)
+{
+    commandTemplate.replace(QStringLiteral("{current}"), QString::number(currentSlot));
+    commandTemplate.replace(QStringLiteral("{next}"), QString::number(nextSlot));
+    return commandTemplate;
+}
+
+bool serialArrivalMatched(QString &pending, const QString &arrivalCommand, size_t &matchCount)
+{
+    matchCount = 0;
+    if (arrivalCommand.isEmpty() || arrivalCommand == QStringLiteral("ANY")) {
+        int lineEnd = -1;
+        while ((lineEnd = pending.indexOf(QRegularExpression(QStringLiteral("[\\r\\n]")))) >= 0) {
+            const QString line = pending.left(lineEnd).trimmed();
+            pending.remove(0, lineEnd + 1);
+            if (!line.isEmpty()) {
+                matchCount++;
+            }
+        }
+        return matchCount > 0;
+    }
+
+    int pos = -1;
+    while ((pos = pending.indexOf(arrivalCommand)) >= 0) {
+        pending.remove(0, pos + arrivalCommand.size());
+        matchCount++;
+    }
+    if (pending.size() > 1024) {
+        pending.remove(0, pending.size() - 1024);
+    }
+    return matchCount > 0;
 }
 
 pid_t startCameraCaptureService(const QString &devicePath, const QString &outputPath)
@@ -332,7 +658,7 @@ bool CameraPreviewWidget::startCamera(int width, int height)
         return false;
     }
 
-    const int fourcc = (m_devicePath == QStringLiteral("/dev/video23"))
+    const int fourcc = (m_devicePath == QString::fromLatin1(kFatigueCameraDevice))
         ? cv::VideoWriter::fourcc('Y', 'U', 'Y', 'V')
         : cv::VideoWriter::fourcc('M', 'J', 'P', 'G');
     capture->set(cv::CAP_PROP_FOURCC, fourcc);
@@ -409,6 +735,11 @@ void CameraPreviewWidget::setFatigueText(const QString &text)
     std::lock_guard<std::mutex> lock(m_fatigueMutex);
     m_fatigueText = text.isEmpty() ? QStringLiteral("状态：清醒") : text;
     update();
+}
+
+void CameraPreviewWidget::setFatigueAlarmCallback(std::function<void(const QString&, int)> callback)
+{
+    m_fatigueAlarmCallback = std::move(callback);
 }
 
 void CameraPreviewWidget::readFrame()
@@ -740,16 +1071,20 @@ void CameraPreviewWidget::setFatigueDecision(FatigueLevel level,
     }
 
     bool shouldBeep = false;
-    std::lock_guard<std::mutex> lock(m_fatigueMutex);
-    shouldBeep = level != m_fatigueLevel && level != FatigueLevel::Awake;
-    m_fatigueLevel = level;
-    m_fatigueText = text;
-    m_fatigueScore = fatigueScore;
+    {
+        std::lock_guard<std::mutex> lock(m_fatigueMutex);
+        shouldBeep = level != m_fatigueLevel && level != FatigueLevel::Awake;
+        m_fatigueLevel = level;
+        m_fatigueText = text;
+        m_fatigueScore = fatigueScore;
+    }
     if (shouldBeep) {
-        writeHmiAlarmLog(fatigueLevelText(level), fatigueLevelText(level));
-        QMetaObject::invokeMethod(qApp, []() {
-            QApplication::beep();
-        }, Qt::QueuedConnection);
+        const QString levelText = fatigueLevelText(level);
+        writeHmiAlarmLog(levelText, levelText);
+        AudioAlert::PlayFatigueWarningAsync();
+        if (m_fatigueAlarmCallback) {
+            m_fatigueAlarmCallback(levelText, fatigueScore);
+        }
     }
 }
 
@@ -984,20 +1319,35 @@ void CameraPreviewWidget::detectionLoop()
     }
 }
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(const HmiRuntimeOptions &options, QWidget *parent)
     : QMainWindow(parent),
-      m_clockTimer(new QTimer(this))
+      m_options(options),
+      m_clockTimer(new QTimer(this)),
+      m_employeeOperationTimer(new QTimer(this)),
+      m_employeeDbConnectionName(QStringLiteral("integrated_employee_%1").arg(reinterpret_cast<quintptr>(this)))
 {
+    m_employeeOperationTimer->setSingleShot(true);
+    connect(m_employeeOperationTimer, &QTimer::timeout, this, &MainWindow::onEmployeeOperationTimeout);
+    openEmployeeDatabase();
     buildUi();
+    m_cloudUploader.Start(toUtf8Std(m_options.cloudUploadConfigPath));
     connect(m_clockTimer, &QTimer::timeout, this, &MainWindow::refreshClock);
     refreshClock();
     m_clockTimer->start(1000);
+    startSerialThread();
     startOcrThread();
 }
 
 MainWindow::~MainWindow()
 {
     stopOcrThread();
+    stopSerialThread();
+    m_cloudUploader.Stop();
+    if (m_employeeDb.isValid()) {
+        m_employeeDb.close();
+        m_employeeDb = QSqlDatabase();
+        QSqlDatabase::removeDatabase(m_employeeDbConnectionName);
+    }
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -1116,9 +1466,11 @@ QWidget *MainWindow::buildCameraArea()
     chipLayout->setContentsMargins(px(10), px(8), px(10), px(10));
     chipLayout->setSpacing(px(4));
     chipLayout->addWidget(createLabel(QStringLiteral("摄像头 1：字符识别 + 缺陷检测"), QStringLiteral("cardTitle")));
-    chipLayout->addWidget(createLabel(QStringLiteral("字符识别和缺陷检测共用 /dev/video21"), QStringLiteral("secondaryText")));
-    m_camera1Preview = new CameraPreviewWidget(QStringLiteral("摄像头 1：/dev/video21"),
-                                               QStringLiteral("/dev/video21"),
+    const QString chipCameraPath = QString::fromLatin1(kChipCameraDevice);
+    const QString fatigueCameraPath = QString::fromLatin1(kFatigueCameraDevice);
+    chipLayout->addWidget(createLabel(QStringLiteral("字符识别和缺陷检测共用 %1").arg(chipCameraPath), QStringLiteral("secondaryText")));
+    m_camera1Preview = new CameraPreviewWidget(QStringLiteral("摄像头 1：%1").arg(chipCameraPath),
+                                               chipCameraPath,
                                                CameraPreviewWidget::DetectionMode::Defect,
                                                chipCard);
     chipLayout->addWidget(m_camera1Preview, 1);
@@ -1128,11 +1480,25 @@ QWidget *MainWindow::buildCameraArea()
     fatigueLayout->setContentsMargins(px(10), px(8), px(10), px(10));
     fatigueLayout->setSpacing(px(4));
     fatigueLayout->addWidget(createLabel(QStringLiteral("摄像头 2：员工疲劳检测"), QStringLiteral("cardTitle")));
-    fatigueLayout->addWidget(createLabel(QStringLiteral("疲劳检测使用 /dev/video23"), QStringLiteral("secondaryText")));
-    m_camera2Preview = new CameraPreviewWidget(QStringLiteral("摄像头 2：/dev/video23"),
-                                               QStringLiteral("/dev/video23"),
+    fatigueLayout->addWidget(createLabel(QStringLiteral("疲劳检测使用 %1").arg(fatigueCameraPath), QStringLiteral("secondaryText")));
+    m_camera2Preview = new CameraPreviewWidget(QStringLiteral("摄像头 2：%1").arg(fatigueCameraPath),
+                                               fatigueCameraPath,
                                                CameraPreviewWidget::DetectionMode::Fatigue,
                                                fatigueCard);
+    m_camera2Preview->setFatigueAlarmCallback([this](const QString &levelText, int fatigueScore) {
+        std::ostringstream result;
+        result << "{"
+               << "\"fatigue_level\":" << jsonString(levelText) << ","
+               << "\"fatigue_score\":" << fatigueScore << ","
+               << "\"status\":\"warning\""
+               << "}";
+        m_cloudUploader.PostInspectionResult("fatigue", kFatigueCameraDevice, result.str());
+        m_cloudUploader.PostAlarm("fatigue",
+                                  levelText == QStringLiteral("严重疲劳") ? "critical" : "warning",
+                                  "fatigue_detected",
+                                  toUtf8Std(QStringLiteral("检测到%1告警").arg(levelText)),
+                                  result.str());
+    });
     fatigueLayout->addWidget(m_camera2Preview, 1);
 
     layout->addWidget(chipCard, 1);
@@ -1206,6 +1572,21 @@ QWidget *MainWindow::buildRightPanel()
     };
     connect(m_defectTypeCombo, &QComboBox::currentTextChanged, this, emitDefectOptions);
 
+    QFrame *motorCard = createCard();
+    QVBoxLayout *motorLayout = new QVBoxLayout(motorCard);
+    motorLayout->setContentsMargins(px(11), px(10), px(11), px(10));
+    motorLayout->setSpacing(px(8));
+    motorLayout->addWidget(createLabel(QStringLiteral("下位机运动控制"), QStringLiteral("cardTitle")));
+    QPushButton *motorForward = createCommandButton(QStringLiteral("前进 10mm"), QStringLiteral("primary"));
+    QPushButton *motorBack = createCommandButton(QStringLiteral("按累计次数回退"), QStringLiteral("warn"));
+    QPushButton *motorAutoRun = createCommandButton(QStringLiteral("执行自动运行"));
+    connect(motorForward, &QPushButton::clicked, this, &MainWindow::requestMotorForward);
+    connect(motorBack, &QPushButton::clicked, this, &MainWindow::requestMotorBack);
+    connect(motorAutoRun, &QPushButton::clicked, this, &MainWindow::requestMotorAutoRun);
+    motorLayout->addWidget(motorForward);
+    motorLayout->addWidget(motorBack);
+    motorLayout->addWidget(motorAutoRun);
+
     QFrame *employeeCard = createCard();
     QVBoxLayout *employeeLayout = new QVBoxLayout(employeeCard);
     employeeLayout->setContentsMargins(px(11), px(10), px(11), px(10));
@@ -1215,6 +1596,7 @@ QWidget *MainWindow::buildRightPanel()
     employeeLayout->addWidget(openEmployee);
 
     layout->addWidget(templateCard);
+    layout->addWidget(motorCard);
     layout->addWidget(employeeCard);
     layout->addStretch(1);
     return panel;
@@ -1240,8 +1622,27 @@ void MainWindow::showEmployeeDialog()
         m_employeeDialog = nullptr;
         m_employeePages.clear();
         m_employeeTabs.clear();
+        m_employeeIdEdit = nullptr;
+        m_employeeNameEdit = nullptr;
+        m_employeeEnrollButton = nullptr;
+        m_employeeCheckinButton = nullptr;
+        m_employeeCheckoutButton = nullptr;
+        m_employeeDeleteButton = nullptr;
+        m_employeeCheckoutCombo = nullptr;
+        m_employeeDeleteCombo = nullptr;
+        m_employeeEnrollStatusLabel = nullptr;
+        m_employeeCheckinStatusLabel = nullptr;
+        m_employeeCheckoutStatusLabel = nullptr;
+        m_employeeDeleteStatusLabel = nullptr;
+        m_empNameLabel = nullptr;
+        m_empIdLabel = nullptr;
+        m_empSignLabel = nullptr;
+        m_empStationLabel = nullptr;
+        m_empShiftLabel = nullptr;
+        m_empWorkDurationLabel = nullptr;
         m_leaveRecordGrid = nullptr;
         m_fatigueRecordGrid = nullptr;
+        m_employeeRecordGrid = nullptr;
     });
 
     QVBoxLayout *root = new QVBoxLayout(dialog);
@@ -1250,7 +1651,9 @@ void MainWindow::showEmployeeDialog()
 
     QHBoxLayout *tabs = new QHBoxLayout;
     tabs->setSpacing(px(8));
-    const QStringList names = {QStringLiteral("签到签退"), QStringLiteral("工时离岗"), QStringLiteral("疲劳记录")};
+    const QStringList names = {QStringLiteral("新建员工"), QStringLiteral("签到"),
+                               QStringLiteral("签退"), QStringLiteral("删除员工"),
+                               QStringLiteral("考勤记录")};
     for (int i = 0; i < names.size(); ++i) {
         QPushButton *tab = createCommandButton(names.at(i), i == 0 ? QStringLiteral("tabOn") : QStringLiteral("tab"));
         m_employeeTabs.append(tab);
@@ -1262,6 +1665,31 @@ void MainWindow::showEmployeeDialog()
     tabs->addStretch(1);
     root->addLayout(tabs);
 
+    QWidget *enrollPage = new QWidget(dialog);
+    QVBoxLayout *enrollLayout = new QVBoxLayout(enrollPage);
+    enrollLayout->setContentsMargins(0, 0, 0, 0);
+    enrollLayout->setSpacing(px(8));
+
+    QFrame *enrollCard = createCard(QStringLiteral("dialogCard"), enrollPage);
+    QGridLayout *enrollGrid = new QGridLayout(enrollCard);
+    enrollGrid->setContentsMargins(px(12), px(12), px(12), px(12));
+    enrollGrid->setSpacing(px(8));
+    m_employeeIdEdit = new QLineEdit(enrollCard);
+    m_employeeIdEdit->setPlaceholderText(QStringLiteral("例如 1001"));
+    m_employeeNameEdit = new QLineEdit(enrollCard);
+    m_employeeNameEdit->setMaxLength(32);
+    m_employeeNameEdit->setPlaceholderText(QStringLiteral("姓名 UTF-8 长度不超过 32 字节"));
+    enrollGrid->addWidget(createFieldRow(QStringLiteral("员工ID"), m_employeeIdEdit), 0, 0);
+    enrollGrid->addWidget(createFieldRow(QStringLiteral("姓名"), m_employeeNameEdit), 0, 1);
+    m_employeeEnrollButton = createCommandButton(QStringLiteral("新建员工"), QStringLiteral("primary"));
+    m_employeeEnrollStatusLabel = createLabel(QStringLiteral("等待录入"), QStringLiteral("secondaryText"), enrollCard);
+    m_employeeEnrollStatusLabel->setWordWrap(true);
+    enrollGrid->addWidget(m_employeeEnrollButton, 1, 0);
+    enrollGrid->addWidget(m_employeeEnrollStatusLabel, 1, 1);
+    connect(m_employeeEnrollButton, &QPushButton::clicked, this, &MainWindow::requestEmployeeEnroll);
+    enrollLayout->addWidget(enrollCard);
+    enrollLayout->addStretch(1);
+
     QWidget *signPage = new QWidget(dialog);
     QGridLayout *signGrid = new QGridLayout(signPage);
     signGrid->setContentsMargins(0, 0, 0, 0);
@@ -1271,77 +1699,86 @@ void MainWindow::showEmployeeDialog()
     m_empSignLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
     m_empStationLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
     m_empShiftLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
+    m_empWorkDurationLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
     signGrid->addWidget(createDialogMetric(QStringLiteral("员工姓名"), QStringLiteral("empName"), signPage), 0, 0);
     signGrid->addWidget(createDialogMetric(QStringLiteral("员工编号"), QStringLiteral("empId"), signPage), 0, 1);
     signGrid->addWidget(createDialogMetric(QStringLiteral("签到状态"), QStringLiteral("empSign"), signPage), 0, 2);
-    signGrid->addWidget(createDialogMetric(QStringLiteral("当前工位"), QStringLiteral("empStation"), signPage), 1, 0);
-    signGrid->addWidget(createDialogMetric(QStringLiteral("当前班次"), QStringLiteral("empShift"), signPage), 1, 1);
-    QFrame *actions = createCard(QStringLiteral("dialogCard"), signPage);
-    QGridLayout *actionLayout = new QGridLayout(actions);
-    actionLayout->setContentsMargins(px(10), px(10), px(10), px(10));
-    actionLayout->setSpacing(px(8));
-    QPushButton *signIn = createCommandButton(QStringLiteral("签到"), QStringLiteral("primary"));
-    QPushButton *signOut = createCommandButton(QStringLiteral("签退"));
-    QPushButton *leave = createCommandButton(QStringLiteral("离岗"), QStringLiteral("warn"));
-    QPushButton *back = createCommandButton(QStringLiteral("返岗"));
-    connect(signIn, &QPushButton::clicked, this, &MainWindow::employeeSignInRequested);
-    connect(signOut, &QPushButton::clicked, this, &MainWindow::employeeSignOutRequested);
-    connect(leave, &QPushButton::clicked, this, &MainWindow::employeeLeaveRequested);
-    connect(back, &QPushButton::clicked, this, &MainWindow::employeeReturnRequested);
-    actionLayout->addWidget(signIn, 0, 0);
-    actionLayout->addWidget(signOut, 0, 1);
-    actionLayout->addWidget(leave, 1, 0);
-    actionLayout->addWidget(back, 1, 1);
-    signGrid->addWidget(actions, 1, 2);
+    signGrid->addWidget(createDialogMetric(QStringLiteral("签到时间"), QStringLiteral("empStation"), signPage), 1, 0);
+    signGrid->addWidget(createDialogMetric(QStringLiteral("设备状态"), QStringLiteral("empShift"), signPage), 1, 1);
+    signGrid->addWidget(createDialogMetric(QStringLiteral("在岗时长"), QStringLiteral("empWork"), signPage), 1, 2);
 
-    QWidget *leavePage = new QWidget(dialog);
-    QVBoxLayout *leaveLayout = new QVBoxLayout(leavePage);
-    leaveLayout->setContentsMargins(0, 0, 0, 0);
-    leaveLayout->setSpacing(px(8));
-    QHBoxLayout *leaveMetrics = new QHBoxLayout;
-    leaveMetrics->setSpacing(px(8));
-    m_empWorkDurationLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empLeaveCountLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empTotalLeaveLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empLastLeaveLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    leaveMetrics->addWidget(createDialogMetric(QStringLiteral("工作时长"), QStringLiteral("empWork"), leavePage));
-    leaveMetrics->addWidget(createDialogMetric(QStringLiteral("离岗次数"), QStringLiteral("empLeaveCount"), leavePage));
-    leaveMetrics->addWidget(createDialogMetric(QStringLiteral("累计离岗"), QStringLiteral("empTotalLeave"), leavePage));
-    leaveMetrics->addWidget(createDialogMetric(QStringLiteral("最近离岗"), QStringLiteral("empLastLeave"), leavePage));
-    leaveLayout->addLayout(leaveMetrics);
-    leaveLayout->addWidget(createRecordTable({QStringLiteral("时间"), QStringLiteral("类型"), QStringLiteral("时长"), QStringLiteral("备注")},
-                                             m_leaveRecords,
-                                             leavePage,
-                                             &m_leaveRecordGrid),
-                           1);
+    QFrame *checkinActions = createCard(QStringLiteral("dialogCard"), signPage);
+    QGridLayout *checkinLayout = new QGridLayout(checkinActions);
+    checkinLayout->setContentsMargins(px(10), px(10), px(10), px(10));
+    checkinLayout->setSpacing(px(8));
+    m_employeeCheckinButton = createCommandButton(QStringLiteral("开始签到"), QStringLiteral("primary"));
+    m_employeeCheckinStatusLabel = createLabel(QStringLiteral("等待签到"), QStringLiteral("secondaryText"), checkinActions);
+    m_employeeCheckinStatusLabel->setWordWrap(true);
+    checkinLayout->addWidget(m_employeeCheckinButton, 0, 0);
+    checkinLayout->addWidget(m_employeeCheckinStatusLabel, 0, 1);
+    connect(m_employeeCheckinButton, &QPushButton::clicked, this, &MainWindow::requestEmployeeCheckin);
+    signGrid->addWidget(checkinActions, 2, 0, 1, 3);
 
-    QWidget *fatiguePage = new QWidget(dialog);
-    QVBoxLayout *fatigueLayout = new QVBoxLayout(fatiguePage);
-    fatigueLayout->setContentsMargins(0, 0, 0, 0);
-    fatigueLayout->setSpacing(px(8));
-    QHBoxLayout *fatigueMetrics = new QHBoxLayout;
-    fatigueMetrics->setSpacing(px(8));
-    m_empFatigueRiskLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empFatigueAlarmLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empBlinkRateLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    m_empSuggestedActionLabel = createLabel(QStringLiteral("--"), QStringLiteral("dialogValue"));
-    fatigueMetrics->addWidget(createDialogMetric(QStringLiteral("疲劳风险"), QStringLiteral("empFatigueRisk"), fatiguePage));
-    fatigueMetrics->addWidget(createDialogMetric(QStringLiteral("疲劳告警"), QStringLiteral("empFatigueAlarm"), fatiguePage));
-    fatigueMetrics->addWidget(createDialogMetric(QStringLiteral("眨眼频率"), QStringLiteral("empBlinkRate"), fatiguePage));
-    fatigueMetrics->addWidget(createDialogMetric(QStringLiteral("建议动作"), QStringLiteral("empSuggest"), fatiguePage));
-    fatigueLayout->addLayout(fatigueMetrics);
-    fatigueLayout->addWidget(createRecordTable({QStringLiteral("时间"), QStringLiteral("风险"), QStringLiteral("指标"), QStringLiteral("处理")},
-                                               m_fatigueRecords,
-                                               fatiguePage,
-                                               &m_fatigueRecordGrid),
-                             1);
+    QWidget *checkoutPage = new QWidget(dialog);
+    QVBoxLayout *checkoutLayout = new QVBoxLayout(checkoutPage);
+    checkoutLayout->setContentsMargins(0, 0, 0, 0);
+    checkoutLayout->setSpacing(px(8));
+    QFrame *checkoutCard = createCard(QStringLiteral("dialogCard"), checkoutPage);
+    QGridLayout *checkoutGrid = new QGridLayout(checkoutCard);
+    checkoutGrid->setContentsMargins(px(12), px(12), px(12), px(12));
+    checkoutGrid->setSpacing(px(8));
+    m_employeeCheckoutCombo = new QComboBox(checkoutCard);
+    m_employeeCheckoutButton = createCommandButton(QStringLiteral("确认签退"), QStringLiteral("primary"));
+    m_employeeCheckoutStatusLabel = createLabel(QStringLiteral("选择在岗员工后签退"), QStringLiteral("secondaryText"), checkoutCard);
+    m_employeeCheckoutStatusLabel->setWordWrap(true);
+    checkoutGrid->addWidget(createFieldRow(QStringLiteral("在岗员工"), m_employeeCheckoutCombo), 0, 0, 1, 2);
+    checkoutGrid->addWidget(m_employeeCheckoutButton, 1, 0);
+    checkoutGrid->addWidget(m_employeeCheckoutStatusLabel, 1, 1);
+    connect(m_employeeCheckoutButton, &QPushButton::clicked, this, &MainWindow::requestEmployeeCheckout);
+    checkoutLayout->addWidget(checkoutCard);
+    checkoutLayout->addStretch(1);
 
-    m_employeePages = {signPage, leavePage, fatiguePage};
+    QWidget *deletePage = new QWidget(dialog);
+    QVBoxLayout *deleteLayout = new QVBoxLayout(deletePage);
+    deleteLayout->setContentsMargins(0, 0, 0, 0);
+    deleteLayout->setSpacing(px(8));
+    QFrame *deleteCard = createCard(QStringLiteral("dialogCard"), deletePage);
+    QGridLayout *deleteGrid = new QGridLayout(deleteCard);
+    deleteGrid->setContentsMargins(px(12), px(12), px(12), px(12));
+    deleteGrid->setSpacing(px(8));
+    m_employeeDeleteCombo = new QComboBox(deleteCard);
+    m_employeeDeleteButton = createCommandButton(QStringLiteral("删除员工"), QStringLiteral("warn"));
+    m_employeeDeleteStatusLabel = createLabel(QStringLiteral("选择员工后删除本机档案和考勤记录"),
+                                              QStringLiteral("secondaryText"),
+                                              deleteCard);
+    m_employeeDeleteStatusLabel->setWordWrap(true);
+    deleteGrid->addWidget(createFieldRow(QStringLiteral("员工"), m_employeeDeleteCombo), 0, 0, 1, 2);
+    deleteGrid->addWidget(m_employeeDeleteButton, 1, 0);
+    deleteGrid->addWidget(m_employeeDeleteStatusLabel, 1, 1);
+    connect(m_employeeDeleteButton, &QPushButton::clicked, this, &MainWindow::requestEmployeeDelete);
+    deleteLayout->addWidget(deleteCard);
+    deleteLayout->addStretch(1);
+
+    QWidget *recordPage = new QWidget(dialog);
+    QVBoxLayout *recordLayout = new QVBoxLayout(recordPage);
+    recordLayout->setContentsMargins(0, 0, 0, 0);
+    recordLayout->setSpacing(px(8));
+    QPushButton *refreshRecords = createCommandButton(QStringLiteral("刷新"), QStringLiteral("primary"));
+    connect(refreshRecords, &QPushButton::clicked, this, &MainWindow::refreshEmployeeRecords);
+    recordLayout->addWidget(refreshRecords, 0, Qt::AlignLeft);
+    recordLayout->addWidget(createRecordTable({QStringLiteral("记录ID"), QStringLiteral("员工ID"), QStringLiteral("姓名"),
+                                               QStringLiteral("签到时间"), QStringLiteral("签退时间"), QStringLiteral("在岗时长")},
+                                              m_employeeRecords,
+                                              recordPage,
+                                              &m_employeeRecordGrid),
+                            1);
+
+    m_employeePages = {enrollPage, signPage, checkoutPage, deletePage, recordPage};
     for (QWidget *page : m_employeePages) {
         root->addWidget(page, 1);
     }
     setDialogPage(0, m_employeePages, m_employeeTabs);
-    refreshEmployeeDialog();
+    refreshEmployeeRecords();
     applyTheme();
     dialog->show();
 }
@@ -1376,6 +1813,9 @@ void MainWindow::confirmInspectionTemplate()
         m_nextSlotIndex = 0;
         m_lastMismatchSignature.clear();
     }
+    m_arrivalRequests.store(1);
+    m_completedForwardMoves.store(0);
+    m_pendingMotorCommand.store(0);
 
     updateKpi(0, 0, 0, 0.0);
     for (int i = 0; i < m_slotWidgets.size(); ++i) {
@@ -1387,7 +1827,10 @@ void MainWindow::confirmInspectionTemplate()
                          QStringLiteral("--"));
     }
     refreshInspectionStatus();
-    appendAlarmLog(QStringLiteral("开始检测"), QStringLiteral("开始检测"));
+    if (m_runningStatusLabel) {
+        m_runningStatusLabel->setText(QStringLiteral("系统运行状态：开始识别当前槽位"));
+    }
+    appendAlarmLog(QStringLiteral("开始检测"), QStringLiteral("开始识别当前槽位"));
 
     emit templateChanged(chipTemplate);
     emit matchModeChanged(matchMode);
@@ -1398,6 +1841,21 @@ void MainWindow::confirmInspectionTemplate()
                                   threshold,
                                   pinMissingEnabled,
                                   scratchEnabled);
+}
+
+void MainWindow::requestMotorForward()
+{
+    sendMotorCommand(kMotorMoveCommand, QStringLiteral("前进10mm"));
+}
+
+void MainWindow::requestMotorBack()
+{
+    sendMotorCommand(kMotorBackCommand, QStringLiteral("按累计次数回退"));
+}
+
+void MainWindow::requestMotorAutoRun()
+{
+    sendMotorCommand(kMotorAutoRunCommand, QStringLiteral("执行自动运行"));
 }
 
 void MainWindow::startOcrThread()
@@ -1414,6 +1872,183 @@ void MainWindow::stopOcrThread()
     m_ocrRunning.store(false);
     if (m_ocrThread.joinable()) {
         m_ocrThread.join();
+    }
+}
+
+void MainWindow::startSerialThread()
+{
+    SerialConfig config;
+    config.port = m_options.serialPort.toStdString();
+    config.baudrate = m_options.serialBaudrate;
+    config.databits = 8;
+    config.stopbits = 1;
+    config.parity = 'N';
+
+    if (!m_serial.Open(config)) {
+        m_serialOnline.store(false);
+        setSerialStatus(false, QStringLiteral("串口打开失败：%1").arg(m_options.serialPort));
+        return;
+    }
+
+    m_serialOnline.store(true);
+    m_serialRunning.store(true);
+    m_serialThread = std::thread(&MainWindow::serialLoop, this);
+    setSerialStatus(true, QStringLiteral("等待运动完成信号：AA 55 21 FF"));
+}
+
+void MainWindow::stopSerialThread()
+{
+    m_serialRunning.store(false);
+    if (m_serialThread.joinable()) {
+        m_serialThread.join();
+    }
+    m_serial.Close();
+    m_serialOnline.store(false);
+}
+
+void MainWindow::serialLoop()
+{
+    QString pending;
+    QByteArray rawPending;
+    uint8_t buffer[128];
+    while (m_serialRunning.load()) {
+        int n = m_serial.Receive(buffer, sizeof(buffer), 100);
+        if (n < 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        if (n == 0) {
+            continue;
+        }
+
+        rawPending.append(reinterpret_cast<const char *>(buffer), n);
+        QVector<EmployeeFrame> employeeFrames;
+        QVector<uint8_t> motorResponses;
+        const QByteArray textBytes = extractEmployeeFrames(rawPending, employeeFrames, motorResponses);
+        for (const EmployeeFrame &frame : employeeFrames) {
+            QMetaObject::invokeMethod(this, [this, command = frame.command, payload = frame.payload]() {
+                handleEmployeeFrame(command, payload);
+            }, Qt::QueuedConnection);
+        }
+
+        for (uint8_t response : motorResponses) {
+            const int pendingCommand = m_pendingMotorCommand.exchange(0);
+            if (response == kMotorMoveDoneCommand) {
+                if (pendingCommand == kMotorAutoRunCommand) {
+                    QMetaObject::invokeMethod(this, [this]() {
+                        setSerialStatus(true, QStringLiteral("自动运行完成：AA 55 21 FF"));
+                    }, Qt::QueuedConnection);
+                } else {
+                    if (pendingCommand == kMotorMoveCommand) {
+                        m_completedForwardMoves.fetch_add(1);
+                    }
+                    const uint64_t total = m_arrivalRequests.fetch_add(1) + 1;
+                    const int completedMoves = m_completedForwardMoves.load();
+                    const int maxForwardMoves = std::min(4, std::max(1, m_options.chipSlots));
+                    QMetaObject::invokeMethod(this, [this, total, completedMoves, maxForwardMoves]() {
+                        setSerialStatus(true, QStringLiteral("收到运动完成信号：累计触发 %1，前进 %2/%3 次")
+                                              .arg(static_cast<qulonglong>(total))
+                                              .arg(completedMoves)
+                                              .arg(maxForwardMoves));
+                        if (m_runningStatusLabel) {
+                            m_runningStatusLabel->setText(QStringLiteral("系统运行状态：运动完成，开始识别"));
+                        }
+                    }, Qt::QueuedConnection);
+                }
+            } else if (response == kMotorBackCommand) {
+                QMetaObject::invokeMethod(this, [this]() {
+                    m_arrivalRequests.store(0);
+                    m_completedForwardMoves.store(0);
+                    setSerialStatus(true, QStringLiteral("回退动作完成：AA 55 22 FF，累计次数已清零"));
+                }, Qt::QueuedConnection);
+            } else if (response == kMotorInterruptedResponse) {
+                QMetaObject::invokeMethod(this, [this, pendingCommand]() {
+                    setSerialStatus(false, QStringLiteral("下位机动作被按键中断：AA 55 23 FF"));
+                    appendAlarmLog(QStringLiteral("下位机中断"),
+                                   QStringLiteral("命令 0x%1 被 KEY_2/KEY_3 中断")
+                                       .arg(pendingCommand, 2, 16, QLatin1Char('0')));
+                }, Qt::QueuedConnection);
+            }
+        }
+
+        const QString chunk = QString::fromLatin1(textBytes.constData(), textBytes.size());
+        pending += chunk;
+        if (pending.size() > 1024) {
+            pending.remove(0, pending.size() - 1024);
+        }
+    }
+}
+
+bool MainWindow::consumeArrivalRequest()
+{
+    uint64_t current = m_arrivalRequests.load();
+    while (current > 0) {
+        if (m_arrivalRequests.compare_exchange_weak(current, current - 1)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MainWindow::sendMotorCommand(uint8_t command, const QString &label)
+{
+    if (!m_serialOnline.load() || !m_serial.IsOpen()) {
+        setSerialStatus(false, QStringLiteral("串口未连接，无法发送%1命令").arg(label));
+        return false;
+    }
+
+    int expected = 0;
+    if (!m_pendingMotorCommand.compare_exchange_strong(expected, command)) {
+        setSerialStatus(false, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
+        return false;
+    }
+
+    QByteArray bytes;
+    bytes.append(static_cast<char>(kEmployeeFrameHeader1));
+    bytes.append(static_cast<char>(kEmployeeFrameHeader2));
+    bytes.append(static_cast<char>(command));
+    bytes.append(static_cast<char>(kEmployeeFrameTail));
+    const int sent = m_serial.Send(reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                  static_cast<size_t>(bytes.size()));
+    if (sent != bytes.size()) {
+        m_pendingMotorCommand.store(0);
+        setSerialStatus(false, QStringLiteral("%1命令发送失败").arg(label));
+        return false;
+    }
+
+    setSerialStatus(true, QStringLiteral("已发送%1命令：AA 55 %2 FF")
+                          .arg(label)
+                          .arg(command, 2, 16, QLatin1Char('0')).toUpper());
+    return true;
+}
+
+void MainWindow::sendMoveCommand()
+{
+    const int maxForwardMoves = std::min(4, std::max(1, m_options.chipSlots));
+    if (m_completedForwardMoves.load() >= maxForwardMoves) {
+        sendMotorCommand(kMotorBackCommand, QStringLiteral("按累计次数回退"));
+        return;
+    }
+    sendMotorCommand(kMotorMoveCommand, QStringLiteral("前进10mm"));
+}
+
+void MainWindow::setSerialStatus(bool online, const QString &detail)
+{
+    if (QThread::currentThread() != thread()) {
+        QMetaObject::invokeMethod(this, [this, online, detail]() {
+            setSerialStatus(online, detail);
+        }, Qt::QueuedConnection);
+        return;
+    }
+
+    m_serialOnline.store(online);
+    if (m_plcStatusLabel) {
+        m_plcStatusLabel->setText(online ? QStringLiteral("PLC：已连接") : QStringLiteral("PLC：未连接"));
+        m_plcStatusLabel->setProperty("state", online ? "ok" : "bad");
+        polish(m_plcStatusLabel);
+    }
+    if (m_runningStatusLabel && !detail.isEmpty()) {
+        m_runningStatusLabel->setText(QStringLiteral("系统运行状态：%1").arg(detail));
     }
 }
 
@@ -1450,6 +2085,16 @@ void MainWindow::ocrLoop()
 
         cv::Mat gray;
         if (!m_camera1Preview->latestGrayFrame(gray)) {
+            QMetaObject::invokeMethod(this, [this]() {
+                if (m_runningStatusLabel) {
+                    m_runningStatusLabel->setText(QStringLiteral("系统运行状态：等待摄像头 1 图像"));
+                }
+            }, Qt::QueuedConnection);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+
+        if (!consumeArrivalRequest()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
@@ -1462,9 +2107,14 @@ void MainWindow::ocrLoop()
             QMetaObject::invokeMethod(this, [this, rawText, normalizedText, score = ocr.bestScore, matched]() {
                 handleOcrResult(rawText, normalizedText, score, matched);
             }, Qt::QueuedConnection);
+        } else {
+            QMetaObject::invokeMethod(this, [this]() {
+                handleOcrResult(QString(), QString(), 0.0f, false);
+            }, Qt::QueuedConnection);
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(900));
+        sendMoveCommand();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -1533,9 +2183,6 @@ void MainWindow::handleOcrResult(const QString &rawText,
         : 0.0;
     updateKpi(totalCount, goodCount, badCount, goodRate);
 
-    Q_UNUSED(rawText);
-    Q_UNUSED(bestScore);
-
     const QString defectCategory = hasDefect ? defectReasonText(defectSummary) : QStringLiteral("无缺陷");
     QStringList reasons;
     if (!matched) {
@@ -1551,11 +2198,53 @@ void MainWindow::handleOcrResult(const QString &rawText,
                      defectCategory,
                      finalGood ? QStringLiteral("--") : reasons.join(QStringLiteral("；")));
 
+    std::ostringstream ocrResult;
+    ocrResult << "{"
+              << "\"template\":" << jsonString(chipTemplate) << ","
+              << "\"raw_text\":" << jsonString(rawText) << ","
+              << "\"normalized_text\":" << jsonString(normalizedText) << ","
+              << "\"matched\":" << jsonBool(matched) << ","
+              << "\"confidence\":" << bestScore << ","
+              << "\"slot_index\":" << slotIndex << ","
+              << "\"status\":" << CloudUploader::JsonString(matched ? "pass" : "ng")
+              << "}";
+    m_cloudUploader.PostInspectionResult("ocr", kChipCameraDevice, ocrResult.str());
+
+    std::ostringstream defectResult;
+    defectResult << "{"
+                 << "\"defect_found\":" << jsonBool(hasDefect) << ","
+                 << "\"defect_count\":" << (hasDefect ? 1 : 0) << ","
+                 << "\"defect_summary\":" << jsonString(defectSummary) << ","
+                 << "\"defect_category\":" << jsonString(defectCategory) << ","
+                 << "\"slot_index\":" << slotIndex << ","
+                 << "\"status\":" << CloudUploader::JsonString(hasDefect ? "ng" : "pass")
+                 << "}";
+    m_cloudUploader.PostInspectionResult("defect", kChipCameraDevice, defectResult.str());
+
     if (shouldLogMismatch) {
         appendAlarmLog(QStringLiteral("字符匹配错误"), QStringLiteral("字符不匹配"));
+        std::ostringstream alarmResult;
+        alarmResult << "{"
+                    << "\"template\":" << jsonString(chipTemplate) << ","
+                    << "\"recognized_text\":" << jsonString(normalizedText) << ","
+                    << "\"raw_text\":" << jsonString(rawText) << ","
+                    << "\"slot_index\":" << slotIndex
+                    << "}";
+        m_cloudUploader.PostAlarm("ocr", "warning", "text_mismatch",
+                                  toUtf8Std(QStringLiteral("字符不匹配")),
+                                  alarmResult.str());
     }
     if (shouldLogDefect) {
         appendAlarmLog(QStringLiteral("缺陷报警"), defectCategory);
+        std::ostringstream alarmResult;
+        alarmResult << "{"
+                    << "\"defect_summary\":" << jsonString(defectSummary) << ","
+                    << "\"defect_category\":" << jsonString(defectCategory) << ","
+                    << "\"slot_index\":" << slotIndex
+                    << "}";
+        m_cloudUploader.PostAlarm("defect", "critical", "surface_defect",
+                                  toUtf8Std(QStringLiteral("检测到芯片缺陷")),
+                                  alarmResult.str());
     }
 }
 
@@ -1915,6 +2604,636 @@ void MainWindow::setDialogPage(int index, const QVector<QWidget *> &pages, const
     }
 }
 
+bool MainWindow::openEmployeeDatabase()
+{
+    if (m_employeeDb.isOpen()) {
+        return true;
+    }
+
+    const QFileInfo dbInfo(m_options.employeeDatabasePath);
+    if (!dbInfo.path().isEmpty() && dbInfo.path() != QStringLiteral(".")) {
+        QDir().mkpath(dbInfo.path());
+    }
+
+    if (!m_employeeDb.isValid()) {
+        m_employeeDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), m_employeeDbConnectionName);
+    }
+    m_employeeDb.setDatabaseName(m_options.employeeDatabasePath);
+    if (!m_employeeDb.open()) {
+        m_employeeDbLastError = m_employeeDb.lastError().text();
+        return false;
+    }
+    return initializeEmployeeDatabase();
+}
+
+bool MainWindow::initializeEmployeeDatabase()
+{
+    QSqlQuery query(m_employeeDb);
+    if (!query.exec(QStringLiteral(
+            "CREATE TABLE IF NOT EXISTS employees ("
+            "id INTEGER PRIMARY KEY,"
+            "name TEXT NOT NULL,"
+            "created_at INTEGER NOT NULL)"))) {
+        m_employeeDbLastError = query.lastError().text();
+        return false;
+    }
+
+    if (!query.exec(QStringLiteral(
+            "CREATE TABLE IF NOT EXISTS attendance ("
+            "record_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "employee_id INTEGER NOT NULL,"
+            "checkin_time INTEGER,"
+            "checkout_time INTEGER,"
+            "duration_sec INTEGER,"
+            "FOREIGN KEY (employee_id) REFERENCES employees(id))"))) {
+        m_employeeDbLastError = query.lastError().text();
+        return false;
+    }
+    return true;
+}
+
+QString MainWindow::employeeDatabaseError() const
+{
+    return m_employeeDbLastError.isEmpty() ? QStringLiteral("数据库不可用") : m_employeeDbLastError;
+}
+
+bool MainWindow::addEmployeeToDatabase(uint32_t employeeId, const QString &name, qint64 createdAt)
+{
+    if (!openEmployeeDatabase()) {
+        return false;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral("INSERT OR REPLACE INTO employees(id, name, created_at) VALUES(?, ?, ?)"));
+    query.addBindValue(static_cast<qulonglong>(employeeId));
+    query.addBindValue(name);
+    query.addBindValue(createdAt);
+    if (!query.exec()) {
+        m_employeeDbLastError = query.lastError().text();
+        return false;
+    }
+    return true;
+}
+
+bool MainWindow::employeeNameFromDatabase(uint32_t employeeId, QString &name) const
+{
+    if (!m_employeeDb.isOpen()) {
+        return false;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral("SELECT name FROM employees WHERE id = ?"));
+    query.addBindValue(static_cast<qulonglong>(employeeId));
+    if (!query.exec() || !query.next()) {
+        return false;
+    }
+    name = query.value(0).toString();
+    return true;
+}
+
+QVector<HmiEmployeeItem> MainWindow::employeesFromDatabase() const
+{
+    QVector<HmiEmployeeItem> items;
+    if (!m_employeeDb.isOpen()) {
+        return items;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral("SELECT id, name FROM employees ORDER BY id ASC"));
+    if (!query.exec()) {
+        return items;
+    }
+    while (query.next()) {
+        HmiEmployeeItem item;
+        item.id = query.value(0).toUInt();
+        item.name = query.value(1).toString();
+        items.append(item);
+    }
+    return items;
+}
+
+QVector<HmiEmployeeItem> MainWindow::employeesOnDuty() const
+{
+    QVector<HmiEmployeeItem> items;
+    if (!m_employeeDb.isOpen()) {
+        return items;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral(
+        "SELECT e.id, e.name FROM employees e "
+        "JOIN attendance a ON a.employee_id = e.id "
+        "WHERE a.checkout_time IS NULL "
+        "ORDER BY a.checkin_time DESC"));
+    if (!query.exec()) {
+        return items;
+    }
+    while (query.next()) {
+        HmiEmployeeItem item;
+        item.id = query.value(0).toUInt();
+        item.name = query.value(1).toString();
+        items.append(item);
+    }
+    return items;
+}
+
+bool MainWindow::deleteEmployeeFromDatabase(uint32_t employeeId)
+{
+    if (!openEmployeeDatabase()) {
+        return false;
+    }
+    if (!m_employeeDb.transaction()) {
+        m_employeeDbLastError = m_employeeDb.lastError().text();
+        return false;
+    }
+
+    QSqlQuery attendanceQuery(m_employeeDb);
+    attendanceQuery.prepare(QStringLiteral("DELETE FROM attendance WHERE employee_id = ?"));
+    attendanceQuery.addBindValue(static_cast<qulonglong>(employeeId));
+    if (!attendanceQuery.exec()) {
+        m_employeeDbLastError = attendanceQuery.lastError().text();
+        m_employeeDb.rollback();
+        return false;
+    }
+
+    QSqlQuery employeeQuery(m_employeeDb);
+    employeeQuery.prepare(QStringLiteral("DELETE FROM employees WHERE id = ?"));
+    employeeQuery.addBindValue(static_cast<qulonglong>(employeeId));
+    if (!employeeQuery.exec()) {
+        m_employeeDbLastError = employeeQuery.lastError().text();
+        m_employeeDb.rollback();
+        return false;
+    }
+    if (employeeQuery.numRowsAffected() <= 0) {
+        m_employeeDbLastError = QStringLiteral("员工ID不存在");
+        m_employeeDb.rollback();
+        return false;
+    }
+
+    if (!m_employeeDb.commit()) {
+        m_employeeDbLastError = m_employeeDb.lastError().text();
+        m_employeeDb.rollback();
+        return false;
+    }
+    return true;
+}
+
+bool MainWindow::addEmployeeCheckin(uint32_t employeeId, qint64 checkinTime)
+{
+    if (!openEmployeeDatabase()) {
+        return false;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral(
+        "INSERT INTO attendance(employee_id, checkin_time, checkout_time, duration_sec) "
+        "VALUES(?, ?, NULL, NULL)"));
+    query.addBindValue(static_cast<qulonglong>(employeeId));
+    query.addBindValue(checkinTime);
+    if (!query.exec()) {
+        m_employeeDbLastError = query.lastError().text();
+        return false;
+    }
+    return true;
+}
+
+bool MainWindow::finishEmployeeCheckout(uint32_t employeeId, qint64 checkoutTime, qint64 durationSec)
+{
+    if (!openEmployeeDatabase()) {
+        return false;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral(
+        "UPDATE attendance SET checkout_time = ?, duration_sec = ? "
+        "WHERE record_id = ("
+        "SELECT record_id FROM attendance WHERE employee_id = ? AND checkout_time IS NULL "
+        "ORDER BY checkin_time DESC LIMIT 1)"));
+    query.addBindValue(checkoutTime);
+    query.addBindValue(durationSec);
+    query.addBindValue(static_cast<qulonglong>(employeeId));
+    if (!query.exec()) {
+        m_employeeDbLastError = query.lastError().text();
+        return false;
+    }
+    return query.numRowsAffected() > 0;
+}
+
+QVector<HmiAttendanceRecord> MainWindow::employeeAttendanceRecords() const
+{
+    QVector<HmiAttendanceRecord> records;
+    if (!m_employeeDb.isOpen()) {
+        return records;
+    }
+    QSqlQuery query(m_employeeDb);
+    query.prepare(QStringLiteral(
+        "SELECT a.record_id, a.employee_id, COALESCE(e.name, ''), "
+        "COALESCE(a.checkin_time, 0), COALESCE(a.checkout_time, 0), COALESCE(a.duration_sec, 0) "
+        "FROM attendance a LEFT JOIN employees e ON e.id = a.employee_id "
+        "ORDER BY a.record_id DESC"));
+    if (!query.exec()) {
+        return records;
+    }
+    while (query.next()) {
+        HmiAttendanceRecord record;
+        record.recordId = query.value(0).toInt();
+        record.employeeId = query.value(1).toUInt();
+        record.name = query.value(2).toString();
+        record.checkinTime = query.value(3).toLongLong();
+        record.checkoutTime = query.value(4).toLongLong();
+        record.durationSec = query.value(5).toLongLong();
+        records.append(record);
+    }
+    return records;
+}
+
+bool MainWindow::sendEmployeeFrame(uint8_t command, const QByteArray &payload)
+{
+    if (!m_serialOnline.load() || !m_serial.IsOpen()) {
+        failEmployeeOperation(QStringLiteral("串口未连接"), QStringLiteral("串口未连接，无法发送员工管理指令"));
+        return false;
+    }
+
+    const QByteArray frame = buildEmployeeFrame(command, payload);
+    if (frame.isEmpty()) {
+        failEmployeeOperation(QStringLiteral("指令错误"), QStringLiteral("员工管理指令数据过长"));
+        return false;
+    }
+    const int sent = m_serial.Send(reinterpret_cast<const uint8_t *>(frame.constData()),
+                                  static_cast<size_t>(frame.size()));
+    if (sent != frame.size()) {
+        failEmployeeOperation(QStringLiteral("发送失败"), QStringLiteral("员工管理指令发送失败"));
+        return false;
+    }
+    return true;
+}
+
+void MainWindow::requestEmployeeEnroll()
+{
+    if (m_employeeOperation != EmployeeOperation::None) {
+        return;
+    }
+
+    bool ok = false;
+    const qulonglong id = m_employeeIdEdit ? m_employeeIdEdit->text().trimmed().toULongLong(&ok) : 0;
+    const QString name = m_employeeNameEdit ? m_employeeNameEdit->text().trimmed() : QString();
+    if (!ok || id == 0 || id > 0xFFFFFFFFULL || name.isEmpty()) {
+        QMessageBox::warning(this, QStringLiteral("输入错误"), QStringLiteral("请输入有效员工ID和姓名"));
+        return;
+    }
+    if (name.toUtf8().size() > 32) {
+        QMessageBox::warning(this, QStringLiteral("输入错误"), QStringLiteral("姓名 UTF-8 长度不能超过 32 字节"));
+        return;
+    }
+
+    m_pendingEmployeeId = static_cast<uint32_t>(id);
+    m_pendingEmployeeName = name;
+    if (!sendEmployeeFrame(0x01, buildEmployeeEnrollPayload(m_pendingEmployeeId, m_pendingEmployeeName))) {
+        return;
+    }
+    m_employeeOperation = EmployeeOperation::Enroll;
+    setEmployeeWaiting(true, QStringLiteral("正在录入，请按下位机提示完成人脸和指纹采集..."));
+    m_employeeOperationTimer->start(kEmployeeOperationTimeoutMs);
+}
+
+void MainWindow::requestEmployeeCheckin()
+{
+    if (m_employeeOperation != EmployeeOperation::None) {
+        return;
+    }
+    if (!sendEmployeeFrame(0x10, QByteArray(1, '\0'))) {
+        return;
+    }
+    m_employeeOperation = EmployeeOperation::Checkin;
+    setEmployeeWaiting(true, QStringLiteral("识别中..."));
+    m_employeeOperationTimer->start(kEmployeeOperationTimeoutMs);
+}
+
+void MainWindow::requestEmployeeCheckout()
+{
+    if (m_employeeOperation != EmployeeOperation::None) {
+        return;
+    }
+    if (!m_employeeCheckoutCombo || m_employeeCheckoutCombo->currentIndex() < 0) {
+        QMessageBox::information(this, QStringLiteral("无在岗员工"), QStringLiteral("当前没有可签退的员工"));
+        return;
+    }
+
+    m_pendingEmployeeId = m_employeeCheckoutCombo->currentData().toUInt();
+    QByteArray payload;
+    appendBe32(payload, m_pendingEmployeeId);
+    if (!sendEmployeeFrame(0x20, payload)) {
+        return;
+    }
+    m_employeeOperation = EmployeeOperation::Checkout;
+    setEmployeeWaiting(true, QStringLiteral("正在签退..."));
+    m_employeeOperationTimer->start(kEmployeeOperationTimeoutMs);
+}
+
+void MainWindow::requestEmployeeDelete()
+{
+    if (m_employeeOperation != EmployeeOperation::None) {
+        return;
+    }
+    if (!m_employeeDeleteCombo || m_employeeDeleteCombo->currentIndex() < 0) {
+        QMessageBox::information(this, QStringLiteral("无员工"), QStringLiteral("当前没有可删除的员工"));
+        return;
+    }
+
+    const uint32_t employeeId = m_employeeDeleteCombo->currentData().toUInt();
+    const QString employeeText = m_employeeDeleteCombo->currentText();
+    const int answer = QMessageBox::question(
+        this,
+        QStringLiteral("确认删除"),
+        QStringLiteral("确定删除 %1 吗？\n将同时删除本机数据库中的该员工考勤记录。").arg(employeeText),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (answer != QMessageBox::Yes) {
+        return;
+    }
+
+    if (!deleteEmployeeFromDatabase(employeeId)) {
+        QMessageBox::warning(this, QStringLiteral("删除失败"), employeeDatabaseError());
+        if (m_employeeDeleteStatusLabel) {
+            m_employeeDeleteStatusLabel->setText(QStringLiteral("删除失败：%1").arg(employeeDatabaseError()));
+        }
+        return;
+    }
+
+    if (m_employeeStatus.employeeId == QString::number(employeeId)) {
+        m_employeeStatus = EmployeeStatus();
+    }
+    if (m_employeeDeleteStatusLabel) {
+        m_employeeDeleteStatusLabel->setText(QStringLiteral("已删除：%1").arg(employeeText));
+    }
+    refreshEmployeeRecords();
+    QMessageBox::information(this, QStringLiteral("删除完成"), QStringLiteral("员工已从本机数据库删除"));
+}
+
+void MainWindow::onEmployeeOperationTimeout()
+{
+    const EmployeeOperation timedOutOperation = m_employeeOperation;
+    const QString text = timedOutOperation == EmployeeOperation::Enroll
+        ? QStringLiteral("录入超时：设备无响应")
+        : timedOutOperation == EmployeeOperation::Checkout
+            ? QStringLiteral("签退超时：设备无响应")
+            : QStringLiteral("设备无响应");
+    m_employeeOperation = EmployeeOperation::None;
+    setEmployeeWaiting(false, text);
+    if (timedOutOperation == EmployeeOperation::Enroll && m_employeeEnrollStatusLabel) {
+        m_employeeEnrollStatusLabel->setText(text);
+        QMessageBox::warning(this, QStringLiteral("超时"), QStringLiteral("录入请求超时，设备无响应"));
+    } else if (timedOutOperation == EmployeeOperation::Checkin && m_employeeCheckinStatusLabel) {
+        m_employeeCheckinStatusLabel->setText(text);
+    } else if (timedOutOperation == EmployeeOperation::Checkout && m_employeeCheckoutStatusLabel) {
+        m_employeeCheckoutStatusLabel->setText(text);
+    }
+}
+
+void MainWindow::handleEmployeeFrame(uint8_t command, const QByteArray &payload)
+{
+    if (command == 0xFF) {
+        failEmployeeOperation(QStringLiteral("设备错误"), employeeDeviceErrorText(payload));
+        return;
+    }
+
+    if (command == 0x02 && m_employeeOperation == EmployeeOperation::Enroll) {
+        m_employeeOperationTimer->stop();
+        m_employeeOperation = EmployeeOperation::None;
+
+        uint32_t employeeId = 0;
+        if (payload.size() != 5 || !readBe32(payload, 0, employeeId)) {
+            failEmployeeOperation(QStringLiteral("录入结果"), QStringLiteral("录入回包格式错误"));
+            return;
+        }
+        const uint8_t status = static_cast<uint8_t>(payload.at(4));
+        const QString msg = employeeEnrollStatusText(status);
+        if (status == 0x00) {
+            if (!addEmployeeToDatabase(employeeId, m_pendingEmployeeName, QDateTime::currentSecsSinceEpoch())) {
+                failEmployeeOperation(QStringLiteral("数据库错误"), employeeDatabaseError());
+                return;
+            }
+            m_employeeStatus.name = m_pendingEmployeeName;
+            m_employeeStatus.employeeId = QString::number(employeeId);
+            m_employeeStatus.signStatus = QStringLiteral("已建档");
+            completeEmployeeOperation(QStringLiteral("录入成功：%1 %2").arg(employeeId).arg(m_pendingEmployeeName));
+            QMessageBox::information(this, QStringLiteral("录入结果"), msg);
+        } else {
+            failEmployeeOperation(QStringLiteral("录入结果"), QStringLiteral("录入失败：%1").arg(msg));
+        }
+        refreshEmployeeDialog();
+        return;
+    }
+
+    if (command == 0x11 && m_employeeOperation == EmployeeOperation::Checkin) {
+        m_employeeOperationTimer->stop();
+        m_employeeOperation = EmployeeOperation::None;
+
+        uint32_t employeeId = 0;
+        uint32_t checkinTime = 0;
+        if (payload.size() != 8 || !readBe32(payload, 0, employeeId) || !readBe32(payload, 4, checkinTime)) {
+            failEmployeeOperation(QStringLiteral("签到结果"), QStringLiteral("签到回包格式错误"));
+            return;
+        }
+
+        QString name;
+        if (!employeeNameFromDatabase(employeeId, name)) {
+            name = QStringLiteral("员工%1").arg(employeeId);
+        }
+        if (!addEmployeeCheckin(employeeId, checkinTime)) {
+            failEmployeeOperation(QStringLiteral("数据库错误"), employeeDatabaseError());
+            return;
+        }
+        m_employeeStatus.name = name;
+        m_employeeStatus.employeeId = QString::number(employeeId);
+        m_employeeStatus.signStatus = QStringLiteral("已签到");
+        m_employeeStatus.station = formatEmployeeTime(checkinTime);
+        m_employeeStatus.shiftName = m_serialOnline.load() ? QStringLiteral("串口已连接") : QStringLiteral("串口未连接");
+        m_employeeStatus.workDuration = QStringLiteral("进行中");
+        completeEmployeeOperation(QStringLiteral("%1 签到成功，时间：%2").arg(name, formatEmployeeTime(checkinTime)));
+        refreshEmployeeRecords();
+        return;
+    }
+
+    if (command == 0x12 && m_employeeOperation == EmployeeOperation::Checkin) {
+        m_employeeOperationTimer->stop();
+        m_employeeOperation = EmployeeOperation::None;
+        const uint8_t reason = payload.size() == 1 ? static_cast<uint8_t>(payload.at(0)) : 0;
+        failEmployeeOperation(QStringLiteral("签到失败"), QStringLiteral("签到失败：%1").arg(employeeCheckinFailText(reason)));
+        return;
+    }
+
+    if (command == 0x21 && m_employeeOperation == EmployeeOperation::Checkout) {
+        m_employeeOperationTimer->stop();
+        m_employeeOperation = EmployeeOperation::None;
+
+        uint32_t employeeId = 0;
+        uint32_t checkinTime = 0;
+        uint32_t checkoutTime = 0;
+        uint32_t durationSec = 0;
+        if (payload.size() != 16 ||
+            !readBe32(payload, 0, employeeId) ||
+            !readBe32(payload, 4, checkinTime) ||
+            !readBe32(payload, 8, checkoutTime) ||
+            !readBe32(payload, 12, durationSec)) {
+            failEmployeeOperation(QStringLiteral("签退结果"), QStringLiteral("签退回包格式错误"));
+            return;
+        }
+
+        finishEmployeeCheckout(employeeId, checkoutTime, durationSec);
+        QString name;
+        if (!employeeNameFromDatabase(employeeId, name)) {
+            name = QStringLiteral("员工%1").arg(employeeId);
+        }
+        m_employeeStatus.name = name;
+        m_employeeStatus.employeeId = QString::number(employeeId);
+        m_employeeStatus.signStatus = QStringLiteral("已签退");
+        m_employeeStatus.station = formatEmployeeTime(checkoutTime);
+        m_employeeStatus.shiftName = m_serialOnline.load() ? QStringLiteral("串口已连接") : QStringLiteral("串口未连接");
+        m_employeeStatus.workDuration = formatEmployeeDuration(durationSec);
+        completeEmployeeOperation(QStringLiteral("签退成功：员工%1，%2 至 %3，在岗 %4")
+                                      .arg(employeeId)
+                                      .arg(formatEmployeeShortTime(checkinTime),
+                                           formatEmployeeShortTime(checkoutTime),
+                                           formatEmployeeDuration(durationSec)));
+        refreshEmployeeRecords();
+    }
+}
+
+void MainWindow::setEmployeeWaiting(bool waiting, const QString &text)
+{
+    if (m_employeeEnrollButton) {
+        m_employeeEnrollButton->setEnabled(!waiting);
+    }
+    if (m_employeeIdEdit) {
+        m_employeeIdEdit->setEnabled(!waiting);
+    }
+    if (m_employeeNameEdit) {
+        m_employeeNameEdit->setEnabled(!waiting);
+    }
+    if (m_employeeCheckinButton) {
+        m_employeeCheckinButton->setEnabled(!waiting);
+    }
+    if (m_employeeCheckoutButton) {
+        m_employeeCheckoutButton->setEnabled(!waiting && (!m_employeeCheckoutCombo || m_employeeCheckoutCombo->count() > 0));
+    }
+    if (m_employeeCheckoutCombo) {
+        m_employeeCheckoutCombo->setEnabled(!waiting);
+    }
+    if (m_employeeDeleteButton) {
+        m_employeeDeleteButton->setEnabled(!waiting && (!m_employeeDeleteCombo || m_employeeDeleteCombo->count() > 0));
+    }
+    if (m_employeeDeleteCombo) {
+        m_employeeDeleteCombo->setEnabled(!waiting);
+    }
+    if (m_employeeOperation == EmployeeOperation::Enroll && m_employeeEnrollStatusLabel) {
+        m_employeeEnrollStatusLabel->setText(text);
+    } else if (m_employeeOperation == EmployeeOperation::Checkin && m_employeeCheckinStatusLabel) {
+        m_employeeCheckinStatusLabel->setText(text);
+    } else if (m_employeeOperation == EmployeeOperation::Checkout && m_employeeCheckoutStatusLabel) {
+        m_employeeCheckoutStatusLabel->setText(text);
+    }
+}
+
+void MainWindow::completeEmployeeOperation(const QString &text)
+{
+    setEmployeeWaiting(false, text);
+    if (m_employeeEnrollStatusLabel && text.startsWith(QStringLiteral("录入成功"))) {
+        m_employeeEnrollStatusLabel->setText(text);
+    }
+    if (m_employeeCheckinStatusLabel && text.contains(QStringLiteral("签到成功"))) {
+        m_employeeCheckinStatusLabel->setText(text);
+    }
+    if (m_employeeCheckoutStatusLabel && text.startsWith(QStringLiteral("签退成功"))) {
+        m_employeeCheckoutStatusLabel->setText(text);
+    }
+    refreshEmployeeDialog();
+}
+
+void MainWindow::failEmployeeOperation(const QString &title, const QString &text)
+{
+    m_employeeOperationTimer->stop();
+    m_employeeOperation = EmployeeOperation::None;
+    setEmployeeWaiting(false, text);
+    if (m_employeeEnrollStatusLabel && title.contains(QStringLiteral("录入"))) {
+        m_employeeEnrollStatusLabel->setText(text);
+    }
+    if (m_employeeCheckinStatusLabel && title.contains(QStringLiteral("签到"))) {
+        m_employeeCheckinStatusLabel->setText(text);
+    }
+    if (m_employeeCheckoutStatusLabel && title.contains(QStringLiteral("签退"))) {
+        m_employeeCheckoutStatusLabel->setText(text);
+    }
+    QMessageBox::warning(this, title, text);
+}
+
+void MainWindow::refreshEmployeeCheckoutList()
+{
+    if (!m_employeeCheckoutCombo) {
+        return;
+    }
+
+    const uint currentId = m_employeeCheckoutCombo->currentData().toUInt();
+    const QSignalBlocker blocker(m_employeeCheckoutCombo);
+    m_employeeCheckoutCombo->clear();
+    const QVector<HmiEmployeeItem> items = employeesOnDuty();
+    for (const HmiEmployeeItem &item : items) {
+        m_employeeCheckoutCombo->addItem(QStringLiteral("%1 - %2").arg(item.id).arg(item.name), item.id);
+    }
+    const int index = m_employeeCheckoutCombo->findData(currentId);
+    if (index >= 0) {
+        m_employeeCheckoutCombo->setCurrentIndex(index);
+    }
+    if (m_employeeCheckoutButton) {
+        m_employeeCheckoutButton->setEnabled(m_employeeOperation == EmployeeOperation::None &&
+                                             m_employeeCheckoutCombo->count() > 0);
+    }
+}
+
+void MainWindow::refreshEmployeeDeleteList()
+{
+    if (!m_employeeDeleteCombo) {
+        return;
+    }
+
+    const uint currentId = m_employeeDeleteCombo->currentData().toUInt();
+    const QSignalBlocker blocker(m_employeeDeleteCombo);
+    m_employeeDeleteCombo->clear();
+    const QVector<HmiEmployeeItem> items = employeesFromDatabase();
+    for (const HmiEmployeeItem &item : items) {
+        m_employeeDeleteCombo->addItem(QStringLiteral("%1 - %2").arg(item.id).arg(item.name), item.id);
+    }
+    const int index = m_employeeDeleteCombo->findData(currentId);
+    if (index >= 0) {
+        m_employeeDeleteCombo->setCurrentIndex(index);
+    }
+    if (m_employeeDeleteButton) {
+        m_employeeDeleteButton->setEnabled(m_employeeOperation == EmployeeOperation::None &&
+                                           m_employeeDeleteCombo->count() > 0);
+    }
+    if (m_employeeDeleteStatusLabel && m_employeeDeleteCombo->count() == 0) {
+        m_employeeDeleteStatusLabel->setText(QStringLiteral("当前没有可删除的员工"));
+    }
+}
+
+void MainWindow::refreshEmployeeRecords()
+{
+    m_employeeRecords.clear();
+    const QVector<HmiAttendanceRecord> records = employeeAttendanceRecords();
+    for (const HmiAttendanceRecord &record : records) {
+        m_employeeRecords.append({QString::number(record.recordId),
+                                  QString::number(record.employeeId),
+                                  record.name,
+                                  formatEmployeeTime(record.checkinTime),
+                                  formatEmployeeTime(record.checkoutTime),
+                                  formatEmployeeDuration(record.durationSec)});
+    }
+
+    if (m_employeeRecordGrid) {
+        updateRecordTable(m_employeeRecordGrid,
+                          {QStringLiteral("记录ID"), QStringLiteral("员工ID"), QStringLiteral("姓名"),
+                           QStringLiteral("签到时间"), QStringLiteral("签退时间"), QStringLiteral("在岗时长")},
+                          m_employeeRecords);
+    }
+    refreshEmployeeCheckoutList();
+    refreshEmployeeDeleteList();
+    refreshEmployeeDialog();
+}
+
 void MainWindow::setTemplateOptions(const QStringList &templates)
 {
     if (!m_templateEdit) {
@@ -1940,6 +3259,7 @@ void MainWindow::setMatchModeOptions(const QStringList &modes)
 
 void MainWindow::updateDeviceStatus(const DeviceStatus &status)
 {
+    m_cloudUploader.UpdateCameraStatus(status.camera1Online, status.camera2Online);
     if (m_plcStatusLabel) {
         m_plcStatusLabel->setText(status.plcConnected ? QStringLiteral("PLC：已连接") : QStringLiteral("PLC：未连接"));
         m_plcStatusLabel->setProperty("state", status.plcConnected ? "ok" : "bad");
@@ -2084,6 +3404,9 @@ void MainWindow::refreshEmployeeDialog()
         return;
     }
 
+    if (m_employeeStatus.shiftName.isEmpty()) {
+        m_employeeStatus.shiftName = m_serialOnline.load() ? QStringLiteral("串口已连接") : QStringLiteral("串口未连接");
+    }
     if (m_empNameLabel) m_empNameLabel->setText(valueOrDash(m_employeeStatus.name));
     if (m_empIdLabel) m_empIdLabel->setText(valueOrDash(m_employeeStatus.employeeId));
     if (m_empSignLabel) m_empSignLabel->setText(valueOrDash(m_employeeStatus.signStatus));
@@ -2101,6 +3424,19 @@ void MainWindow::refreshEmployeeDialog()
     }
     if (m_empBlinkRateLabel) m_empBlinkRateLabel->setText(valueOrDash(m_employeeStatus.blinkRate));
     if (m_empSuggestedActionLabel) m_empSuggestedActionLabel->setText(valueOrDash(m_employeeStatus.suggestedAction));
+    if (m_employeeRecords.isEmpty()) {
+        const QVector<HmiAttendanceRecord> records = employeeAttendanceRecords();
+        for (const HmiAttendanceRecord &record : records) {
+            m_employeeRecords.append({QString::number(record.recordId),
+                                      QString::number(record.employeeId),
+                                      record.name,
+                                      formatEmployeeTime(record.checkinTime),
+                                      formatEmployeeTime(record.checkoutTime),
+                                      formatEmployeeDuration(record.durationSec)});
+        }
+    }
+    refreshEmployeeCheckoutList();
+    refreshEmployeeDeleteList();
 }
 
 void MainWindow::setStatusLabel(QLabel *label, const QString &prefix, bool ok)

@@ -8,7 +8,15 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/main.cc" "CMakeFiles/main_process.dir/src/main.cc.o" "gcc" "CMakeFiles/main_process.dir/src/main.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/mocs_compilation.cpp" "CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/audio_alert.cc" "CMakeFiles/main_process.dir/src/audio_alert.cc.o" "gcc" "CMakeFiles/main_process.dir/src/audio_alert.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/cloud_uploader.cc" "CMakeFiles/main_process.dir/src/cloud_uploader.cc.o" "gcc" "CMakeFiles/main_process.dir/src/cloud_uploader.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/hmi_main.cc" "CMakeFiles/main_process.dir/src/hmi_main.cc.o" "gcc" "CMakeFiles/main_process.dir/src/hmi_main.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/hmi_mainwindow.cc" "CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o" "gcc" "CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/hmi_ocr_detector.cc" "CMakeFiles/main_process.dir/src/hmi_ocr_detector.cc.o" "gcc" "CMakeFiles/main_process.dir/src/hmi_ocr_detector.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/logger.cc" "CMakeFiles/main_process.dir/src/logger.cc.o" "gcc" "CMakeFiles/main_process.dir/src/logger.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc" "CMakeFiles/main_process.dir/src/serial_port.cc.o" "gcc" "CMakeFiles/main_process.dir/src/serial_port.cc.o.d"
+  "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/yolo_detector.cc" "CMakeFiles/main_process.dir/src/yolo_detector.cc.o" "gcc" "CMakeFiles/main_process.dir/src/yolo_detector.cc.o.d"
   "/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o" "gcc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o.d"
   "/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o" "gcc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/postprocess.cc.o.d"
   "/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o" "gcc" "CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocrv5.cc.o.d"

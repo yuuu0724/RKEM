@@ -68,3 +68,7 @@ chip_utils.out/CMakeFiles/fileutils.dir/file_utils.c.o
  /usr/include/aarch64-linux-gnu/bits/strings_fortified.h
  /usr/include/aarch64-linux-gnu/bits/string_fortified.h
 
+chip_utils.out/CMakeFiles/fileutils.dir/fileutils_autogen/mocs_compilation.cpp.o
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_utils.out/fileutils_autogen/mocs_compilation.cpp
+ /usr/include/stdc-predef.h
+

@@ -1,4 +1,9 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/process_ocr_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/process_ocr_autogen.dir/ParseCache.txt"
+  "process_ocr_autogen"
+  "CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o"
+  "CMakeFiles/process_ocr.dir/process_ocr_autogen/mocs_compilation.cpp.o.d"
   "CMakeFiles/process_ocr.dir/src/camera.cc.o"
   "CMakeFiles/process_ocr.dir/src/camera.cc.o.d"
   "CMakeFiles/process_ocr.dir/src/ipc_manager.cc.o"
