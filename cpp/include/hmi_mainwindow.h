@@ -39,8 +39,10 @@ class HmiOcrDetector;
 struct HmiRuntimeOptions {
     QString serialPort = QStringLiteral("/dev/ttyS9");
     int serialBaudrate = 115200;
+    QString motorSerialPort = QStringLiteral("/dev/ttyS8");
+    int motorSerialBaudrate = 115200;
     QString arrivalCommand = QStringLiteral("DONE");
-    QString moveCommand = QStringLiteral("MOVE_NEXT\n");
+    QString moveCommand = QStringLiteral("hex:AA 55 20 FF");
     QString employeeDatabasePath = QStringLiteral("employee_host.db");
     QString cloudUploadConfigPath = QStringLiteral("config/cloud_upload.ini");
     int chipSlots = 4;
@@ -331,6 +333,7 @@ private:
     void startSerialThread();
     void stopSerialThread();
     void serialLoop();
+    void motorSerialLoop();
     bool consumeArrivalRequest();
     bool sendMotorCommand(uint8_t command, const QString &label);
     void sendMoveCommand();
@@ -388,10 +391,15 @@ private:
     SerialPort m_serial;
     std::atomic<bool> m_serialRunning{false};
     std::atomic<bool> m_serialOnline{false};
+    SerialPort m_motorSerial;
+    std::atomic<bool> m_motorSerialRunning{false};
+    std::atomic<bool> m_motorSerialOnline{false};
     std::atomic<uint64_t> m_arrivalRequests{0};
     std::atomic<int> m_pendingMotorCommand{0};
+    std::atomic<qint64> m_pendingMotorCommandMs{0};
     std::atomic<int> m_completedForwardMoves{0};
     std::thread m_serialThread;
+    std::thread m_motorSerialThread;
     CloudUploader m_cloudUploader;
     std::mutex m_inspectionMutex;
     bool m_inspectionActive = false;

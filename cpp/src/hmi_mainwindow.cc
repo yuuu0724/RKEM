@@ -81,6 +81,7 @@ constexpr uint8_t kMotorBackCommand = 0x22;
 constexpr uint8_t kMotorInterruptedResponse = 0x23;
 constexpr uint8_t kMotorAutoRunCommand = 0x24;
 constexpr uint8_t kMotorMoveDoneCommand = 0x21;
+constexpr qint64 kMotorCommandTimeoutMs = 5000;
 std::mutex g_detectorInitMutex;
 
 struct RawFrameHeader {
@@ -426,6 +427,32 @@ QString printableSerialText(const QString &text)
         }
     }
     return out;
+}
+
+QByteArray parseHexCommand(const QString &text)
+{
+    const QString trimmed = text.trimmed();
+    if (!trimmed.startsWith(QStringLiteral("hex:"), Qt::CaseInsensitive)) {
+        return {};
+    }
+
+    QString hex = trimmed.mid(4);
+    hex.remove(QRegularExpression(QStringLiteral("[\\s,;:-]")));
+    if (hex.isEmpty() || (hex.size() % 2) != 0) {
+        return {};
+    }
+
+    QByteArray bytes;
+    bytes.reserve(hex.size() / 2);
+    for (int i = 0; i < hex.size(); i += 2) {
+        bool ok = false;
+        const uint value = hex.mid(i, 2).toUInt(&ok, 16);
+        if (!ok || value > 0xFF) {
+            return {};
+        }
+        bytes.append(static_cast<char>(value));
+    }
+    return bytes;
 }
 
 QString formatMotorCommand(QString commandTemplate, int currentSlot, int nextSlot)
@@ -1877,23 +1904,43 @@ void MainWindow::stopOcrThread()
 
 void MainWindow::startSerialThread()
 {
-    SerialConfig config;
-    config.port = m_options.serialPort.toStdString();
-    config.baudrate = m_options.serialBaudrate;
-    config.databits = 8;
-    config.stopbits = 1;
-    config.parity = 'N';
+    SerialConfig employeeConfig;
+    employeeConfig.port = m_options.serialPort.toStdString();
+    employeeConfig.baudrate = m_options.serialBaudrate;
+    employeeConfig.databits = 8;
+    employeeConfig.stopbits = 1;
+    employeeConfig.parity = 'N';
 
-    if (!m_serial.Open(config)) {
+    if (!m_serial.Open(employeeConfig)) {
         m_serialOnline.store(false);
-        setSerialStatus(false, QStringLiteral("串口打开失败：%1").arg(m_options.serialPort));
-        return;
+        setSerialStatus(false, QStringLiteral("员工串口打开失败：%1").arg(m_options.serialPort));
+    } else {
+        m_serialOnline.store(true);
+        m_serialRunning.store(true);
+        m_serialThread = std::thread(&MainWindow::serialLoop, this);
     }
 
-    m_serialOnline.store(true);
-    m_serialRunning.store(true);
-    m_serialThread = std::thread(&MainWindow::serialLoop, this);
-    setSerialStatus(true, QStringLiteral("等待运动完成信号：AA 55 21 FF"));
+    SerialConfig motorConfig;
+    motorConfig.port = m_options.motorSerialPort.toStdString();
+    motorConfig.baudrate = m_options.motorSerialBaudrate;
+    motorConfig.databits = 8;
+    motorConfig.stopbits = 1;
+    motorConfig.parity = 'N';
+
+    m_pendingMotorCommand.store(0);
+    m_pendingMotorCommandMs.store(0);
+    if (!m_motorSerial.Open(motorConfig)) {
+        m_motorSerialOnline.store(false);
+        setSerialStatus(false, QStringLiteral("电机串口打开失败：%1").arg(m_options.motorSerialPort));
+    } else {
+        m_motorSerialOnline.store(true);
+        m_motorSerialRunning.store(true);
+        m_motorSerialThread = std::thread(&MainWindow::motorSerialLoop, this);
+        setSerialStatus(true, QStringLiteral("员工串口 %1，电机串口 %2，等待到位信号：%3")
+                              .arg(m_options.serialPort,
+                                   m_options.motorSerialPort,
+                                   printableSerialText(m_options.arrivalCommand)));
+    }
 }
 
 void MainWindow::stopSerialThread()
@@ -1904,6 +1951,15 @@ void MainWindow::stopSerialThread()
     }
     m_serial.Close();
     m_serialOnline.store(false);
+
+    m_motorSerialRunning.store(false);
+    if (m_motorSerialThread.joinable()) {
+        m_motorSerialThread.join();
+    }
+    m_motorSerial.Close();
+    m_motorSerialOnline.store(false);
+    m_pendingMotorCommand.store(0);
+    m_pendingMotorCommandMs.store(0);
 }
 
 void MainWindow::serialLoop()
@@ -1930,9 +1986,32 @@ void MainWindow::serialLoop()
                 handleEmployeeFrame(command, payload);
             }, Qt::QueuedConnection);
         }
+        Q_UNUSED(textBytes);
+    }
+}
 
+void MainWindow::motorSerialLoop()
+{
+    QString pending;
+    QByteArray rawPending;
+    uint8_t buffer[128];
+    while (m_motorSerialRunning.load()) {
+        int n = m_motorSerial.Receive(buffer, sizeof(buffer), 100);
+        if (n < 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+        if (n == 0) {
+            continue;
+        }
+
+        rawPending.append(reinterpret_cast<const char *>(buffer), n);
+        QVector<EmployeeFrame> employeeFrames;
+        QVector<uint8_t> motorResponses;
+        const QByteArray textBytes = extractEmployeeFrames(rawPending, employeeFrames, motorResponses);
         for (uint8_t response : motorResponses) {
             const int pendingCommand = m_pendingMotorCommand.exchange(0);
+            m_pendingMotorCommandMs.store(0);
             if (response == kMotorMoveDoneCommand) {
                 if (pendingCommand == kMotorAutoRunCommand) {
                     QMetaObject::invokeMethod(this, [this]() {
@@ -1963,7 +2042,7 @@ void MainWindow::serialLoop()
                 }, Qt::QueuedConnection);
             } else if (response == kMotorInterruptedResponse) {
                 QMetaObject::invokeMethod(this, [this, pendingCommand]() {
-                    setSerialStatus(false, QStringLiteral("下位机动作被按键中断：AA 55 23 FF"));
+                    setSerialStatus(true, QStringLiteral("下位机动作被按键中断：AA 55 23 FF"));
                     appendAlarmLog(QStringLiteral("下位机中断"),
                                    QStringLiteral("命令 0x%1 被 KEY_2/KEY_3 中断")
                                        .arg(pendingCommand, 2, 16, QLatin1Char('0')));
@@ -1973,6 +2052,28 @@ void MainWindow::serialLoop()
 
         const QString chunk = QString::fromLatin1(textBytes.constData(), textBytes.size());
         pending += chunk;
+        size_t textMatchCount = 0;
+        if (serialArrivalMatched(pending, m_options.arrivalCommand, textMatchCount)) {
+            const int pendingCommand = m_pendingMotorCommand.exchange(0);
+            m_pendingMotorCommandMs.store(0);
+            if (pendingCommand == kMotorMoveCommand) {
+                m_completedForwardMoves.fetch_add(static_cast<int>(textMatchCount));
+            }
+            const uint64_t total = m_arrivalRequests.fetch_add(textMatchCount) + textMatchCount;
+            const int completedMoves = m_completedForwardMoves.load();
+            const int maxForwardMoves = std::min(4, std::max(1, m_options.chipSlots));
+            const QString arrivalText = printableSerialText(m_options.arrivalCommand);
+            QMetaObject::invokeMethod(this, [this, total, completedMoves, maxForwardMoves, arrivalText]() {
+                setSerialStatus(true, QStringLiteral("收到到位信号：%1，累计触发 %2，前进 %3/%4 次")
+                                      .arg(arrivalText)
+                                      .arg(static_cast<qulonglong>(total))
+                                      .arg(completedMoves)
+                                      .arg(maxForwardMoves));
+                if (m_runningStatusLabel) {
+                    m_runningStatusLabel->setText(QStringLiteral("系统运行状态：运动完成，开始识别"));
+                }
+            }, Qt::QueuedConnection);
+        }
         if (pending.size() > 1024) {
             pending.remove(0, pending.size() - 1024);
         }
@@ -1992,33 +2093,69 @@ bool MainWindow::consumeArrivalRequest()
 
 bool MainWindow::sendMotorCommand(uint8_t command, const QString &label)
 {
-    if (!m_serialOnline.load() || !m_serial.IsOpen()) {
-        setSerialStatus(false, QStringLiteral("串口未连接，无法发送%1命令").arg(label));
+    if (!m_motorSerialOnline.load() || !m_motorSerial.IsOpen()) {
+        setSerialStatus(false, QStringLiteral("电机串口未连接，无法发送%1命令：%2")
+                              .arg(label, m_options.motorSerialPort));
         return false;
     }
 
     int expected = 0;
     if (!m_pendingMotorCommand.compare_exchange_strong(expected, command)) {
-        setSerialStatus(false, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
-        return false;
+        const qint64 pendingMs = m_pendingMotorCommandMs.load();
+        const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+        if (pendingMs <= 0 || nowMs - pendingMs < kMotorCommandTimeoutMs) {
+            setSerialStatus(true, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
+            return false;
+        }
+        m_pendingMotorCommand.store(0);
+        m_pendingMotorCommandMs.store(0);
+        setSerialStatus(true, QStringLiteral("下位机回包超时，重新发送%1命令").arg(label));
+        expected = 0;
+        if (!m_pendingMotorCommand.compare_exchange_strong(expected, command)) {
+            setSerialStatus(true, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
+            return false;
+        }
     }
+    m_pendingMotorCommandMs.store(QDateTime::currentMSecsSinceEpoch());
 
     QByteArray bytes;
-    bytes.append(static_cast<char>(kEmployeeFrameHeader1));
-    bytes.append(static_cast<char>(kEmployeeFrameHeader2));
-    bytes.append(static_cast<char>(command));
-    bytes.append(static_cast<char>(kEmployeeFrameTail));
-    const int sent = m_serial.Send(reinterpret_cast<const uint8_t *>(bytes.constData()),
-                                  static_cast<size_t>(bytes.size()));
+    QString sentText;
+    if (command == kMotorMoveCommand && !m_options.moveCommand.isEmpty()) {
+        const int maxForwardMoves = std::min(4, std::max(1, m_options.chipSlots));
+        const int currentSlot = (m_completedForwardMoves.load() % maxForwardMoves) + 1;
+        const int nextSlot = currentSlot >= maxForwardMoves ? 1 : currentSlot + 1;
+        sentText = formatMotorCommand(m_options.moveCommand,
+                                      currentSlot,
+                                      nextSlot);
+        bytes = parseHexCommand(sentText);
+        if (bytes.isEmpty()) {
+            bytes = sentText.toLatin1();
+        }
+    } else {
+        bytes.append(static_cast<char>(kEmployeeFrameHeader1));
+        bytes.append(static_cast<char>(kEmployeeFrameHeader2));
+        bytes.append(static_cast<char>(command));
+        bytes.append(static_cast<char>(kEmployeeFrameTail));
+    }
+    const int sent = m_motorSerial.Send(reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                       static_cast<size_t>(bytes.size()));
     if (sent != bytes.size()) {
         m_pendingMotorCommand.store(0);
+        m_pendingMotorCommandMs.store(0);
         setSerialStatus(false, QStringLiteral("%1命令发送失败").arg(label));
         return false;
     }
 
-    setSerialStatus(true, QStringLiteral("已发送%1命令：AA 55 %2 FF")
-                          .arg(label)
-                          .arg(command, 2, 16, QLatin1Char('0')).toUpper());
+    if (!sentText.isEmpty()) {
+        setSerialStatus(true, QStringLiteral("已发送%1命令：%2")
+                              .arg(label, parseHexCommand(sentText).isEmpty()
+                                              ? printableSerialText(sentText)
+                                              : sentText));
+    } else {
+        setSerialStatus(true, QStringLiteral("已发送%1命令：AA 55 %2 FF")
+                              .arg(label)
+                              .arg(command, 2, 16, QLatin1Char('0')).toUpper());
+    }
     return true;
 }
 
@@ -2041,7 +2178,6 @@ void MainWindow::setSerialStatus(bool online, const QString &detail)
         return;
     }
 
-    m_serialOnline.store(online);
     if (m_plcStatusLabel) {
         m_plcStatusLabel->setText(online ? QStringLiteral("PLC：已连接") : QStringLiteral("PLC：未连接"));
         m_plcStatusLabel->setProperty("state", online ? "ok" : "bad");
@@ -2946,6 +3082,15 @@ void MainWindow::requestEmployeeDelete()
         return;
     }
 
+    QByteArray payload;
+    appendBe32(payload, employeeId);
+    if (!sendEmployeeFrame(0x30, payload)) {
+        if (m_employeeDeleteStatusLabel) {
+            m_employeeDeleteStatusLabel->setText(QStringLiteral("删除指令发送失败：%1").arg(employeeText));
+        }
+        return;
+    }
+
     if (!deleteEmployeeFromDatabase(employeeId)) {
         QMessageBox::warning(this, QStringLiteral("删除失败"), employeeDatabaseError());
         if (m_employeeDeleteStatusLabel) {
@@ -2958,10 +3103,10 @@ void MainWindow::requestEmployeeDelete()
         m_employeeStatus = EmployeeStatus();
     }
     if (m_employeeDeleteStatusLabel) {
-        m_employeeDeleteStatusLabel->setText(QStringLiteral("已删除：%1").arg(employeeText));
+        m_employeeDeleteStatusLabel->setText(QStringLiteral("已发送删除指令并删除本机记录：%1").arg(employeeText));
     }
     refreshEmployeeRecords();
-    QMessageBox::information(this, QStringLiteral("删除完成"), QStringLiteral("员工已从本机数据库删除"));
+    QMessageBox::information(this, QStringLiteral("删除完成"), QStringLiteral("已发送删除指令，员工已从本机数据库删除"));
 }
 
 void MainWindow::onEmployeeOperationTimeout()

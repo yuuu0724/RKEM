@@ -70,7 +70,6 @@ all: CMakeFiles/process_defect.dir/all
 all: CMakeFiles/two_model_camera_demo.dir/all
 all: CMakeFiles/camera_capture_service.dir/all
 all: CMakeFiles/main_process.dir/all
-all: CMakeFiles/integrated_inspection_hmi.dir/all
 all: chip_3rdparty.out/all
 all: chip_utils.out/all
 .PHONY : all
@@ -88,7 +87,6 @@ clean: CMakeFiles/process_defect.dir/clean
 clean: CMakeFiles/two_model_camera_demo.dir/clean
 clean: CMakeFiles/camera_capture_service.dir/clean
 clean: CMakeFiles/main_process.dir/clean
-clean: CMakeFiles/integrated_inspection_hmi.dir/clean
 clean: CMakeFiles/main_process_cli_autogen.dir/clean
 clean: CMakeFiles/process_ocr_autogen.dir/clean
 clean: CMakeFiles/process_fatigue_autogen.dir/clean
@@ -96,7 +94,6 @@ clean: CMakeFiles/process_defect_autogen.dir/clean
 clean: CMakeFiles/two_model_camera_demo_autogen.dir/clean
 clean: CMakeFiles/camera_capture_service_autogen.dir/clean
 clean: CMakeFiles/main_process_autogen.dir/clean
-clean: CMakeFiles/integrated_inspection_hmi_autogen.dir/clean
 clean: chip_3rdparty.out/clean
 clean: chip_utils.out/clean
 .PHONY : clean
@@ -150,7 +147,7 @@ CMakeFiles/main_process_cli.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/al
 CMakeFiles/main_process_cli.dir/all: CMakeFiles/main_process_cli_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli.dir/build.make CMakeFiles/main_process_cli.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=49,50,51,52,53,54,55,56,57,58 "Built target main_process_cli"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=35,36,37,38,39,40,41,42,43,44 "Built target main_process_cli"
 .PHONY : CMakeFiles/main_process_cli.dir/all
 
 # Build rule for subdir invocation for target.
@@ -176,7 +173,7 @@ CMakeFiles/main_process_cli.dir/clean:
 CMakeFiles/process_ocr.dir/all: CMakeFiles/process_ocr_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=85,86,87,88,89,90,91,92,93,94,95 "Built target process_ocr"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=71,72,73,74,75,76,77,78,79,80,81 "Built target process_ocr"
 .PHONY : CMakeFiles/process_ocr.dir/all
 
 # Build rule for subdir invocation for target.
@@ -202,7 +199,7 @@ CMakeFiles/process_ocr.dir/clean:
 CMakeFiles/process_fatigue.dir/all: CMakeFiles/process_fatigue_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue.dir/build.make CMakeFiles/process_fatigue.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=72,73,74,75,76,77,78,79,80,81,82,83 "Built target process_fatigue"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=58,59,60,61,62,63,64,65,66,67,68,69 "Built target process_fatigue"
 .PHONY : CMakeFiles/process_fatigue.dir/all
 
 # Build rule for subdir invocation for target.
@@ -228,7 +225,7 @@ CMakeFiles/process_fatigue.dir/clean:
 CMakeFiles/process_defect.dir/all: CMakeFiles/process_defect_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=60,61,62,63,64,65,66,67,68,69,70 "Built target process_defect"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=46,47,48,49,50,51,52,53,54,55,56 "Built target process_defect"
 .PHONY : CMakeFiles/process_defect.dir/all
 
 # Build rule for subdir invocation for target.
@@ -254,7 +251,7 @@ CMakeFiles/process_defect.dir/clean:
 CMakeFiles/two_model_camera_demo.dir/all: CMakeFiles/two_model_camera_demo_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo.dir/build.make CMakeFiles/two_model_camera_demo.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=97,98,99 "Built target two_model_camera_demo"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=83,84,85 "Built target two_model_camera_demo"
 .PHONY : CMakeFiles/two_model_camera_demo.dir/all
 
 # Build rule for subdir invocation for target.
@@ -308,7 +305,7 @@ CMakeFiles/main_process.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/all
 CMakeFiles/main_process.dir/all: CMakeFiles/main_process_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=35,36,37,38,39,40,41,42,43,44,45,46,47 "Built target main_process"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=21,22,23,24,25,26,27,28,29,30,31,32,33 "Built target main_process"
 .PHONY : CMakeFiles/main_process.dir/all
 
 # Build rule for subdir invocation for target.
@@ -328,34 +325,6 @@ CMakeFiles/main_process.dir/clean:
 .PHONY : CMakeFiles/main_process.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/integrated_inspection_hmi.dir
-
-# All Build rule for target.
-CMakeFiles/integrated_inspection_hmi.dir/all: chip_utils.out/CMakeFiles/fileutils.dir/all
-CMakeFiles/integrated_inspection_hmi.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/all
-CMakeFiles/integrated_inspection_hmi.dir/all: CMakeFiles/integrated_inspection_hmi_autogen.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=21,22,23,24,25,26,27,28,29,30,31,32,33 "Built target integrated_inspection_hmi"
-.PHONY : CMakeFiles/integrated_inspection_hmi.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/integrated_inspection_hmi.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles 22
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/integrated_inspection_hmi.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles 0
-.PHONY : CMakeFiles/integrated_inspection_hmi.dir/rule
-
-# Convenience name for target.
-integrated_inspection_hmi: CMakeFiles/integrated_inspection_hmi.dir/rule
-.PHONY : integrated_inspection_hmi
-
-# clean rule for target.
-CMakeFiles/integrated_inspection_hmi.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi.dir/build.make CMakeFiles/integrated_inspection_hmi.dir/clean
-.PHONY : CMakeFiles/integrated_inspection_hmi.dir/clean
-
-#=============================================================================
 # Target rules for target CMakeFiles/main_process_cli_autogen.dir
 
 # All Build rule for target.
@@ -363,7 +332,7 @@ CMakeFiles/main_process_cli_autogen.dir/all: chip_utils.out/CMakeFiles/fileutils
 CMakeFiles/main_process_cli_autogen.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli_autogen.dir/build.make CMakeFiles/main_process_cli_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_cli_autogen.dir/build.make CMakeFiles/main_process_cli_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=59 "Built target main_process_cli_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=45 "Built target main_process_cli_autogen"
 .PHONY : CMakeFiles/main_process_cli_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -389,7 +358,7 @@ CMakeFiles/main_process_cli_autogen.dir/clean:
 CMakeFiles/process_ocr_autogen.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr_autogen.dir/build.make CMakeFiles/process_ocr_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr_autogen.dir/build.make CMakeFiles/process_ocr_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=96 "Built target process_ocr_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=82 "Built target process_ocr_autogen"
 .PHONY : CMakeFiles/process_ocr_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -415,7 +384,7 @@ CMakeFiles/process_ocr_autogen.dir/clean:
 CMakeFiles/process_fatigue_autogen.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue_autogen.dir/build.make CMakeFiles/process_fatigue_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_fatigue_autogen.dir/build.make CMakeFiles/process_fatigue_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=84 "Built target process_fatigue_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=70 "Built target process_fatigue_autogen"
 .PHONY : CMakeFiles/process_fatigue_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -441,7 +410,7 @@ CMakeFiles/process_fatigue_autogen.dir/clean:
 CMakeFiles/process_defect_autogen.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect_autogen.dir/build.make CMakeFiles/process_defect_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect_autogen.dir/build.make CMakeFiles/process_defect_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=71 "Built target process_defect_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=57 "Built target process_defect_autogen"
 .PHONY : CMakeFiles/process_defect_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -467,7 +436,7 @@ CMakeFiles/process_defect_autogen.dir/clean:
 CMakeFiles/two_model_camera_demo_autogen.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo_autogen.dir/build.make CMakeFiles/two_model_camera_demo_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/two_model_camera_demo_autogen.dir/build.make CMakeFiles/two_model_camera_demo_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=100 "Built target two_model_camera_demo_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=86 "Built target two_model_camera_demo_autogen"
 .PHONY : CMakeFiles/two_model_camera_demo_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -520,7 +489,7 @@ CMakeFiles/main_process_autogen.dir/all: chip_utils.out/CMakeFiles/fileutils.dir
 CMakeFiles/main_process_autogen.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_autogen.dir/build.make CMakeFiles/main_process_autogen.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_autogen.dir/build.make CMakeFiles/main_process_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=48 "Built target main_process_autogen"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=34 "Built target main_process_autogen"
 .PHONY : CMakeFiles/main_process_autogen.dir/all
 
 # Build rule for subdir invocation for target.
@@ -538,33 +507,6 @@ main_process_autogen: CMakeFiles/main_process_autogen.dir/rule
 CMakeFiles/main_process_autogen.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process_autogen.dir/build.make CMakeFiles/main_process_autogen.dir/clean
 .PHONY : CMakeFiles/main_process_autogen.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/integrated_inspection_hmi_autogen.dir
-
-# All Build rule for target.
-CMakeFiles/integrated_inspection_hmi_autogen.dir/all: chip_utils.out/CMakeFiles/fileutils.dir/all
-CMakeFiles/integrated_inspection_hmi_autogen.dir/all: chip_utils.out/CMakeFiles/imageutils.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi_autogen.dir/build.make CMakeFiles/integrated_inspection_hmi_autogen.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi_autogen.dir/build.make CMakeFiles/integrated_inspection_hmi_autogen.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles --progress-num=34 "Built target integrated_inspection_hmi_autogen"
-.PHONY : CMakeFiles/integrated_inspection_hmi_autogen.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/integrated_inspection_hmi_autogen.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles 9
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/integrated_inspection_hmi_autogen.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles 0
-.PHONY : CMakeFiles/integrated_inspection_hmi_autogen.dir/rule
-
-# Convenience name for target.
-integrated_inspection_hmi_autogen: CMakeFiles/integrated_inspection_hmi_autogen.dir/rule
-.PHONY : integrated_inspection_hmi_autogen
-
-# clean rule for target.
-CMakeFiles/integrated_inspection_hmi_autogen.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/integrated_inspection_hmi_autogen.dir/build.make CMakeFiles/integrated_inspection_hmi_autogen.dir/clean
-.PHONY : CMakeFiles/integrated_inspection_hmi_autogen.dir/clean
 
 #=============================================================================
 # Target rules for target chip_utils.out/CMakeFiles/fileutils.dir

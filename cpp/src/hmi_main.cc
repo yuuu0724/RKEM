@@ -1,4 +1,5 @@
 #include "hmi_mainwindow.h"
+#include "logger.h"
 
 #include <QApplication>
 #include <QFont>
@@ -41,10 +42,12 @@ QString decodeEscapedCommand(const QString &text)
 void printUsage()
 {
     std::cout << "Usage: ./main_process [--serial-port /dev/ttyS9] [--serial-baud 115200]\n";
+    std::cout << "                      [--motor-serial-port /dev/ttyS8] [--motor-serial-baud 115200]\n";
     std::cout << "                      [--employee-db employee_host.db] [--cloud-config config/cloud_upload.ini]\n";
-    std::cout << "                      [--chip-slots 4]\n";
+    std::cout << "                      [--arrival-command DONE] [--move-command 'hex:AA 55 20 FF'] [--chip-slots 4]\n";
     std::cout << "                      [-platform offscreen]\n";
-    std::cout << "Motor protocol: send AA 55 20 FF to move, receive AA 55 21 FF when movement completes.\n";
+    std::cout << "Motor protocol: default binary command AA 55 20 FF, receive AA 55 21 FF when movement completes.\n";
+    std::cout << "Text move command can be passed as --move-command 'MOVE_NEXT\\n'.\n";
 }
 
 HmiRuntimeOptions parseOptions(int argc, char *argv[])
@@ -56,6 +59,10 @@ HmiRuntimeOptions parseOptions(int argc, char *argv[])
             options.serialPort = QString::fromLocal8Bit(argv[++i]);
         } else if (arg == QStringLiteral("--serial-baud") && i + 1 < argc) {
             options.serialBaudrate = QString::fromLocal8Bit(argv[++i]).toInt();
+        } else if (arg == QStringLiteral("--motor-serial-port") && i + 1 < argc) {
+            options.motorSerialPort = QString::fromLocal8Bit(argv[++i]);
+        } else if (arg == QStringLiteral("--motor-serial-baud") && i + 1 < argc) {
+            options.motorSerialBaudrate = QString::fromLocal8Bit(argv[++i]).toInt();
         } else if (arg == QStringLiteral("--arrival-command") && i + 1 < argc) {
             options.arrivalCommand = decodeEscapedCommand(QString::fromLocal8Bit(argv[++i]));
         } else if (arg == QStringLiteral("--move-command") && i + 1 < argc) {
@@ -88,6 +95,7 @@ int main(int argc, char *argv[])
     setenv("RGA_LOG_LEVEL", "3", 0);
 
     const HmiRuntimeOptions options = parseOptions(argc, argv);
+    Logger::GetInstance().Init("logs");
 
     QApplication app(argc, argv);
 
@@ -95,8 +103,12 @@ int main(int argc, char *argv[])
     font.setPointSize(10);
     app.setFont(font);
 
-    MainWindow window(options);
-    window.show();
-
-    return app.exec();
+    int rc = 0;
+    {
+        MainWindow window(options);
+        window.show();
+        rc = app.exec();
+    }
+    Logger::GetInstance().Shutdown();
+    return rc;
 }

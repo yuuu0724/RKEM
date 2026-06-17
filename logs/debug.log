@@ -1,0 +1,1 @@
+[2026-06-17 10:20:41] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:62 - Serial port /dev/ttyS9 opened successfully, baud=115200 data=8 stop=1 parity=N

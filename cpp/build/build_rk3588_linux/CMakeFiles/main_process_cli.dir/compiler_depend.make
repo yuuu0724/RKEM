@@ -1604,7 +1604,18 @@ CMakeFiles/main_process_cli.dir/src/serial_port.cc.o: ../../src/serial_port.cc \
   /usr/include/string.h \
   /usr/include/strings.h \
   /usr/include/aarch64-linux-gnu/bits/strings_fortified.h \
-  /usr/include/aarch64-linux-gnu/bits/string_fortified.h
+  /usr/include/aarch64-linux-gnu/bits/string_fortified.h \
+  /usr/include/c++/11/iomanip \
+  /usr/include/c++/11/locale \
+  /usr/include/c++/11/bits/locale_facets_nonio.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/time_members.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/messages_members.h \
+  /usr/include/libintl.h \
+  /usr/include/c++/11/bits/locale_facets_nonio.tcc \
+  /usr/include/c++/11/bits/locale_conv.h \
+  /usr/include/c++/11/bits/quoted_string.h \
+  /usr/include/c++/11/sstream \
+  /usr/include/c++/11/bits/sstream.tcc
 
 CMakeFiles/main_process_cli.dir/userdata/sdcard/workspace/proj/chip/cpp/clipper.cc.o: /userdata/sdcard/workspace/proj/chip/cpp/clipper.cc \
   /usr/include/stdc-predef.h \

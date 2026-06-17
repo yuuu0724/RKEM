@@ -1421,6 +1421,12 @@ CMakeFiles/integrated_inspection_hmi.dir/src/hmi_main.cc.o: ../../src/hmi_main.c
   /usr/include/opencv4/opencv2/core/optim.hpp \
   /usr/include/opencv4/opencv2/core/ovx.hpp \
   /usr/include/opencv4/opencv2/core/cvdef.h \
+  ../../include/logger.h \
+  /usr/include/c++/11/fstream \
+  /usr/include/c++/11/bits/codecvt.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/basic_file.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/c++io.h \
+  /usr/include/c++/11/bits/fstream.tcc \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QApplication \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qapplication.h \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qcoreapplication.h \
@@ -3155,7 +3161,18 @@ CMakeFiles/integrated_inspection_hmi.dir/src/serial_port.cc.o: ../../src/serial_
   /usr/include/string.h \
   /usr/include/strings.h \
   /usr/include/aarch64-linux-gnu/bits/strings_fortified.h \
-  /usr/include/aarch64-linux-gnu/bits/string_fortified.h
+  /usr/include/aarch64-linux-gnu/bits/string_fortified.h \
+  /usr/include/c++/11/iomanip \
+  /usr/include/c++/11/locale \
+  /usr/include/c++/11/bits/locale_facets_nonio.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/time_members.h \
+  /usr/include/aarch64-linux-gnu/c++/11/bits/messages_members.h \
+  /usr/include/libintl.h \
+  /usr/include/c++/11/bits/locale_facets_nonio.tcc \
+  /usr/include/c++/11/bits/locale_conv.h \
+  /usr/include/c++/11/bits/quoted_string.h \
+  /usr/include/c++/11/sstream \
+  /usr/include/c++/11/bits/sstream.tcc
 
 CMakeFiles/integrated_inspection_hmi.dir/src/yolo_detector.cc.o: ../../src/yolo_detector.cc \
   /usr/include/stdc-predef.h \
@@ -5208,9 +5225,9 @@ CMakeFiles/integrated_inspection_hmi.dir/userdata/sdcard/workspace/proj/chip/cpp
 
 /usr/include/asm-generic/errno-base.h:
 
-../../include/logger.h:
-
 /usr/include/libintl.h:
+
+../../include/logger.h:
 
 /usr/include/c++/11/bits/char_traits.h:
 
@@ -5726,11 +5743,11 @@ integrated_inspection_hmi_autogen/6YEA5652QU/moc_hmi_mainwindow.cpp:
 
 /usr/include/aarch64-linux-gnu/qt5/QtCore/qvarlengtharray.h:
 
+/usr/include/opencv4/opencv2/flann/config.h:
+
 /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h:
 
 integrated_inspection_hmi_autogen/mocs_compilation.cpp:
-
-/usr/include/opencv4/opencv2/flann/config.h:
 
 /usr/include/aarch64-linux-gnu/qt5/QtCore/qalgorithms.h:
 

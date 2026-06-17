@@ -5,7 +5,6 @@
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/two_model_camera_demo.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/camera_capture_service.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/main_process.dir
-/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/integrated_inspection_hmi.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/edit_cache.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/rebuild_cache.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/list_install_components.dir
@@ -19,7 +18,6 @@
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/two_model_camera_demo_autogen.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/camera_capture_service_autogen.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/main_process_autogen.dir
-/userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/CMakeFiles/integrated_inspection_hmi_autogen.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_3rdparty.out/CMakeFiles/edit_cache.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_3rdparty.out/CMakeFiles/rebuild_cache.dir
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/chip_3rdparty.out/CMakeFiles/list_install_components.dir

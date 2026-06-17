@@ -13,10 +13,12 @@ cd cpp
 ./build-linux.sh -t rk3588
 ```
 
-Build only the Qt Widgets HMI target from an existing build tree:
+Do not build or modify a standalone `integrated_inspection_hmi` target. The field UI, detection workflow, serial communication, and upload logic must be implemented in `main_process`; treat `main_process` as the only integrated Qt HMI entry point.
+
+Build only the integrated Qt HMI entry from an existing build tree:
 
 ```bash
-cmake --build build/build_rk3588_linux --target integrated_inspection_hmi -j2
+cmake --build build/build_rk3588_linux --target main_process -j2
 ```
 
 Run the integrated detector on the target board:
@@ -26,10 +28,10 @@ cd cpp/install/rk3588_linux
 ./main_process --chip-camera /dev/video21 --fatigue-camera /dev/video23
 ```
 
-Run the HMI:
+Run the integrated Qt HMI:
 
 ```bash
-./integrated_inspection_hmi
+./main_process
 ```
 
 ## Coding Style & Naming Conventions
@@ -41,7 +43,7 @@ Use C++17. Follow existing lowercase file names with `.cc` and `.h`, such as `oc
 There is no centralized automated test suite. Validate by building the target you changed and running it on RK3588 hardware. For camera paths, confirm `/dev/video21` and `/dev/video23` exist and are not occupied. For UI startup checks without a display, run:
 
 ```bash
-timeout 3 ./integrated_inspection_hmi -platform offscreen
+timeout 3 ./main_process -platform offscreen
 ```
 
 ## Commit & Pull Request Guidelines

@@ -4,7 +4,23 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstring>
+#include <iomanip>
+#include <sstream>
 #include <sys/select.h>
+
+namespace {
+std::string HexDump(const uint8_t* data, size_t len) {
+    std::ostringstream oss;
+    oss << std::uppercase << std::hex << std::setfill('0');
+    for (size_t i = 0; i < len; ++i) {
+        if (i > 0) {
+            oss << ' ';
+        }
+        oss << std::setw(2) << static_cast<int>(data[i]);
+    }
+    return oss.str();
+}
+}
 
 // ============================================================
 // 构造函数和析构函数
@@ -32,13 +48,20 @@ bool SerialPort::Open(const SerialConfig& config) {
         return false;
     }
 
+    int flags = fcntl(fd_, F_GETFL, 0);
+    if (flags >= 0) {
+        fcntl(fd_, F_SETFL, flags & ~O_NONBLOCK);
+    }
+
     // 配置串口参数
     if (!Configure()) {
         Close();
         return false;
     }
 
-    LOG_INFO("Serial port %s opened successfully", config.port.c_str());
+    LOG_INFO("Serial port %s opened successfully, baud=%d data=%d stop=%d parity=%c",
+             config.port.c_str(), config.baudrate, config.databits,
+             config.stopbits, config.parity);
     return true;
 }
 
@@ -49,7 +72,7 @@ void SerialPort::Close() {
     if (fd_ >= 0) {
         close(fd_);
         fd_ = -1;
-        LOG_INFO("Serial port closed");
+        LOG_INFO("Serial port %s closed", config_.port.c_str());
     }
 }
 
@@ -69,6 +92,10 @@ int SerialPort::Send(const uint8_t* data, size_t len) {
         LOG_ERROR("Failed to send data: %s", strerror(errno));
         return -1;
     }
+    tcdrain(fd_);
+    LOG_INFO("Serial TX %s %zd/%zu bytes: %s",
+             config_.port.c_str(), written, len,
+             HexDump(data, static_cast<size_t>(written)).c_str());
 
     return static_cast<int>(written);
 }
@@ -118,6 +145,11 @@ int SerialPort::Receive(uint8_t* buffer, size_t len, int timeout_ms) {
     if (n < 0) {
         LOG_ERROR("Failed to receive data: %s", strerror(errno));
         return -1;
+    }
+    if (n > 0) {
+        LOG_INFO("Serial RX %s %zd bytes: %s",
+                 config_.port.c_str(), n,
+                 HexDump(buffer, static_cast<size_t>(n)).c_str());
     }
 
     return static_cast<int>(n);
@@ -198,13 +230,19 @@ bool SerialPort::Configure() {
             return false;
     }
 
-    // 设置为原始模式
+    // 设置为原始模式，二进制协议不能经过终端行规程转换。
+    options.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP |
+                         INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY);
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
     options.c_oflag &= ~OPOST;
+    options.c_cflag |= (CLOCAL | CREAD);
+#ifdef CRTSCTS
+    options.c_cflag &= ~CRTSCTS;
+#endif
 
     // 设置超时
     options.c_cc[VMIN] = 0;
-    options.c_cc[VTIME] = 10;  // 1 秒超时
+    options.c_cc[VTIME] = 1;  // 0.1 秒超时
 
     // 应用配置
     if (tcsetattr(fd_, TCSANOW, &options) < 0) {

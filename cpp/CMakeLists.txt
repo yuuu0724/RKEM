@@ -259,8 +259,8 @@ if (BUILD_QT_HMI)
     endfunction()
 
     # main_process 作为现场一体化入口：Qt HMI + 检测 + 串口 + 上传。
+    # 不再生成独立 integrated_inspection_hmi，现场和调试改动统一写入 main_process。
     add_integrated_hmi_target(main_process)
-    add_integrated_hmi_target(integrated_inspection_hmi)
 endif()
 
 # ============================================================
@@ -269,9 +269,6 @@ endif()
 
 # 安装可执行文件
 set(INSTALL_TARGETS main_process main_process_cli process_ocr process_fatigue process_defect two_model_camera_demo camera_capture_service)
-if (BUILD_QT_HMI)
-    list(APPEND INSTALL_TARGETS integrated_inspection_hmi)
-endif()
 install(TARGETS ${INSTALL_TARGETS} DESTINATION .)
 
 # 安装模型文件
