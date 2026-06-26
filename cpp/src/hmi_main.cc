@@ -69,6 +69,7 @@ HmiRuntimeOptions parseOptions(int argc, char *argv[])
             options.moveCommand = decodeEscapedCommand(QString::fromLocal8Bit(argv[++i]));
         } else if (arg == QStringLiteral("--employee-db") && i + 1 < argc) {
             options.employeeDatabasePath = QString::fromLocal8Bit(argv[++i]);
+            options.employeeDatabasePathProvided = true;
         } else if (arg == QStringLiteral("--cloud-config") && i + 1 < argc) {
             options.cloudUploadConfigPath = QString::fromLocal8Bit(argv[++i]);
         } else if (arg == QStringLiteral("--chip-slots") && i + 1 < argc) {
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
     int rc = 0;
     {
         MainWindow window(options);
-        window.show();
+        window.showFullScreen();
         rc = app.exec();
     }
     Logger::GetInstance().Shutdown();

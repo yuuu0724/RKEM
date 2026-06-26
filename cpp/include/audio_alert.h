@@ -4,6 +4,7 @@
 namespace AudioAlert {
 
 void PlayFatigueWarningAsync();
+void PlayRecognitionCompleteAsync();
 
 } // namespace AudioAlert
 

@@ -14,6 +14,7 @@
 namespace {
 
 constexpr const char *kFatigueMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/fatigue.mp3";
+constexpr const char *kRecognitionMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/recognize.mp3";
 constexpr const char *kDefaultAlsaDevice = "plughw:1,0";
 
 bool fileExists(const std::string &path)
@@ -38,6 +39,25 @@ std::string resolveFatigueMp3Path()
         }
     }
     return kFatigueMp3Path;
+}
+
+std::string resolveRecognitionMp3Path()
+{
+    const char *envPath = std::getenv("RECOGNITION_ALERT_MP3");
+    const std::vector<std::string> candidates = {
+        envPath ? std::string(envPath) : std::string(),
+        kRecognitionMp3Path,
+        "/userdata/sdcard/workspace/proj/integrated-inspection/MP3/recognize.mp3",
+        "MP3/recognize.mp3",
+        "../MP3/recognize.mp3",
+    };
+
+    for (const std::string &path : candidates) {
+        if (fileExists(path)) {
+            return path;
+        }
+    }
+    return kRecognitionMp3Path;
 }
 
 int runPlayer(const std::vector<std::string> &args)
@@ -117,6 +137,7 @@ bool playOnce(const std::string &path)
 }
 
 std::atomic<bool> g_fatigueAlertPlaying{false};
+std::atomic<bool> g_recognitionAlertPlaying{false};
 
 } // namespace
 
@@ -136,16 +157,31 @@ void PlayFatigueWarningAsync()
             return;
         }
 
-        for (int i = 0; i < 2; ++i) {
-            if (!playOnce(path)) {
-                std::fprintf(stderr, "[WARN] failed to play fatigue audio: %s\n", path.c_str());
-                break;
-            }
-            if (i == 0) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
+        if (!playOnce(path)) {
+            std::fprintf(stderr, "[WARN] failed to play fatigue audio: %s\n", path.c_str());
         }
         g_fatigueAlertPlaying.store(false);
+    }).detach();
+}
+
+void PlayRecognitionCompleteAsync()
+{
+    if (g_recognitionAlertPlaying.exchange(true)) {
+        return;
+    }
+
+    const std::string path = resolveRecognitionMp3Path();
+    std::thread([path]() {
+        if (!fileExists(path)) {
+            std::fprintf(stderr, "[WARN] recognition audio file not found: %s\n", path.c_str());
+            g_recognitionAlertPlaying.store(false);
+            return;
+        }
+
+        if (!playOnce(path)) {
+            std::fprintf(stderr, "[WARN] failed to play recognition audio: %s\n", path.c_str());
+        }
+        g_recognitionAlertPlaying.store(false);
     }).detach();
 }
 

@@ -2030,6 +2030,8 @@ CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o: ../../src/hmi_mainwindow.cc
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qrubberband.h \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qframe.h \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qabstractitemmodel.h \
+  /usr/include/aarch64-linux-gnu/qt5/QtCore/QCoreApplication \
+  /usr/include/aarch64-linux-gnu/qt5/QtCore/qcoreapplication.h \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/QDateTime \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qdatetime.h \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QDialog \
@@ -2041,6 +2043,8 @@ CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o: ../../src/hmi_mainwindow.cc
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qfiledevice.h \
   /usr/include/aarch64-linux-gnu/qt5/QtGui/QDoubleValidator \
   /usr/include/aarch64-linux-gnu/qt5/QtGui/qvalidator.h \
+  /usr/include/aarch64-linux-gnu/qt5/QtCore/QFile \
+  /usr/include/aarch64-linux-gnu/qt5/QtCore/qfile.h \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/QFileInfo \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qfileinfo.h \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QFrame \
@@ -2067,6 +2071,7 @@ CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o: ../../src/hmi_mainwindow.cc
   /usr/include/aarch64-linux-gnu/qt5/QtGui/qtextformat.h \
   /usr/include/aarch64-linux-gnu/qt5/QtGui/qpen.h \
   /usr/include/aarch64-linux-gnu/qt5/QtGui/qtextoption.h \
+  /usr/include/aarch64-linux-gnu/qt5/QtGui/QIntValidator \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/QLocale \
   /usr/include/aarch64-linux-gnu/qt5/QtCore/qlocale.h \
   /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QMessageBox \
@@ -4659,6 +4664,8 @@ CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocr
 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qmessagebox.h:
 
+/usr/include/aarch64-linux-gnu/qt5/QtGui/QIntValidator:
+
 /usr/include/aarch64-linux-gnu/qt5/QtGui/qtextoption.h:
 
 /usr/include/aarch64-linux-gnu/qt5/QtGui/qtextformat.h:
@@ -4690,6 +4697,8 @@ CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocr
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/qgridlayout.h:
 
 /usr/include/aarch64-linux-gnu/qt5/QtWidgets/QGridLayout:
+
+/usr/include/aarch64-linux-gnu/qt5/QtCore/QFile:
 
 /usr/include/aarch64-linux-gnu/qt5/QtGui/QDoubleValidator:
 
@@ -5092,6 +5101,8 @@ CMakeFiles/main_process.dir/userdata/sdcard/workspace/proj/chip/cpp/rknpu2/ppocr
 /usr/include/c++/11/bits/ptr_traits.h:
 
 /usr/include/c++/11/bits/erase_if.h:
+
+/usr/include/aarch64-linux-gnu/qt5/QtCore/QCoreApplication:
 
 /usr/include/opencv4/opencv2/flann/all_indices.h:
 

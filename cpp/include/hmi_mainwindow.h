@@ -44,6 +44,7 @@ struct HmiRuntimeOptions {
     QString arrivalCommand = QStringLiteral("DONE");
     QString moveCommand = QStringLiteral("hex:AA 55 20 FF");
     QString employeeDatabasePath = QStringLiteral("employee_host.db");
+    bool employeeDatabasePathProvided = false;
     QString cloudUploadConfigPath = QStringLiteral("config/cloud_upload.ini");
     int chipSlots = 4;
 };
@@ -335,7 +336,10 @@ private:
     void serialLoop();
     void motorSerialLoop();
     bool consumeArrivalRequest();
-    bool sendMotorCommand(uint8_t command, const QString &label);
+    bool sendMotorCommand(uint8_t command,
+                          const QString &label,
+                          bool triggerInspectionOnDone = false,
+                          bool completesRoundOnBackDone = false);
     void sendMoveCommand();
     void setSerialStatus(bool online, const QString &detail);
     void handleOcrResult(const QString &rawText,
@@ -379,6 +383,7 @@ private:
     CameraPreviewWidget *m_camera1Preview = nullptr;
     CameraPreviewWidget *m_camera2Preview = nullptr;
     QLineEdit *m_templateEdit = nullptr;
+    QLineEdit *m_centerSpacingEdit = nullptr;
     QComboBox *m_matchModeCombo = nullptr;
     QComboBox *m_defectTypeCombo = nullptr;
     QLineEdit *m_ocrThresholdEdit = nullptr;
@@ -397,7 +402,11 @@ private:
     std::atomic<uint64_t> m_arrivalRequests{0};
     std::atomic<int> m_pendingMotorCommand{0};
     std::atomic<qint64> m_pendingMotorCommandMs{0};
+    std::atomic<bool> m_pendingMotorTriggersInspection{false};
+    std::atomic<bool> m_pendingBackCompletesRound{false};
+    std::atomic<bool> m_roundCompletionAnnounced{false};
     std::atomic<int> m_completedForwardMoves{0};
+    std::atomic<int> m_centerSpacingMm{10};
     std::thread m_serialThread;
     std::thread m_motorSerialThread;
     CloudUploader m_cloudUploader;
