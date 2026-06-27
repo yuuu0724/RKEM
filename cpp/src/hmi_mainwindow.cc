@@ -87,6 +87,10 @@ constexpr uint8_t kMotorMoveDistanceCommand = 0x25;
 constexpr uint8_t kMotorBackDistanceCommand = 0x26;
 constexpr uint8_t kMotorMoveDoneCommand = 0x21;
 constexpr qint64 kMotorCommandTimeoutMs = 5000;
+constexpr int kMotorHardwareStepMm = 20;
+constexpr int kSortMotionNone = 0;
+constexpr int kSortMotionForward = 1;
+constexpr int kSortMotionBackward = 2;
 std::mutex g_detectorInitMutex;
 
 struct RawFrameHeader {
@@ -323,6 +327,35 @@ QString findProjectRootFrom(const QString &startPath)
         }
     }
     return QString();
+}
+
+QString resolveRuntimeFile(const QString &path)
+{
+    const QFileInfo input(path);
+    if (input.isAbsolute()) {
+        return input.absoluteFilePath();
+    }
+
+    QStringList candidates;
+    candidates << QDir::current().absoluteFilePath(path)
+               << QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(path);
+
+    QString projectRoot = findProjectRootFrom(QCoreApplication::applicationDirPath());
+    if (projectRoot.isEmpty()) {
+        projectRoot = findProjectRootFrom(QDir::currentPath());
+    }
+    if (!projectRoot.isEmpty()) {
+        candidates << QDir(projectRoot).absoluteFilePath(path)
+                   << QDir(QDir(projectRoot).filePath(QStringLiteral("cpp"))).absoluteFilePath(path);
+    }
+
+    for (const QString &candidate : candidates) {
+        const QFileInfo info(candidate);
+        if (info.exists() && info.isFile()) {
+            return info.absoluteFilePath();
+        }
+    }
+    return candidates.isEmpty() ? path : QDir::cleanPath(candidates.constFirst());
 }
 
 QString defaultEmployeeDatabasePath()
@@ -577,13 +610,15 @@ pid_t startCameraCaptureService(const QString &devicePath, const QString &output
 
     const QByteArray device = devicePath.toLocal8Bit();
     const QByteArray output = outputPath.toLocal8Bit();
+    const QByteArray service = QFile::encodeName(
+        resolveRuntimeFile(QStringLiteral("camera_capture_service")));
     pid_t pid = fork();
     if (pid < 0) {
         std::perror("fork camera_capture_service");
         return -1;
     }
     if (pid == 0) {
-        execl("./camera_capture_service", "camera_capture_service",
+        execl(service.constData(), "camera_capture_service",
               "--camera", device.constData(),
               "--output", output.constData(),
               "--width", "640",
@@ -1342,14 +1377,28 @@ void CameraPreviewWidget::detectionLoop()
     {
         std::lock_guard<std::mutex> lock(g_detectorInitMutex);
         if (m_detectionMode == DetectionMode::Defect) {
-            initialized = detector.init("model/defect/defect_best_i8.rknn",
-                                        "model/defect/dataset.txt",
+            const std::string modelPath = toUtf8Std(resolveRuntimeFile(
+                QStringLiteral("model/defect/defect_best_i8.rknn")));
+            const std::string labelPath = toUtf8Std(resolveRuntimeFile(
+                QStringLiteral("model/defect/dataset.txt")));
+            std::fprintf(stdout, "[INFO] HMI defect model=%s labels=%s\n",
+                         modelPath.c_str(), labelPath.c_str());
+            std::fflush(stdout);
+            initialized = detector.init(modelPath,
+                                        labelPath,
                                         2,
                                         kYoloThreshold,
                                         RKNN_NPU_CORE_2);
         } else if (m_detectionMode == DetectionMode::Fatigue) {
-            initialized = detector.init("model/fatigue/fatigue_two_outputs_i8.rknn",
-                                        "model/fatigue/dataset.txt",
+            const std::string modelPath = toUtf8Std(resolveRuntimeFile(
+                QStringLiteral("model/fatigue/fatigue_two_outputs_i8.rknn")));
+            const std::string labelPath = toUtf8Std(resolveRuntimeFile(
+                QStringLiteral("model/fatigue/dataset.txt")));
+            std::fprintf(stdout, "[INFO] HMI fatigue model=%s labels=%s\n",
+                         modelPath.c_str(), labelPath.c_str());
+            std::fflush(stdout);
+            initialized = detector.init(modelPath,
+                                        labelPath,
                                         3,
                                         kYoloThreshold,
                                         RKNN_NPU_CORE_1);
@@ -1440,6 +1489,7 @@ MainWindow::MainWindow(const HmiRuntimeOptions &options, QWidget *parent)
     connect(m_employeeOperationTimer, &QTimer::timeout, this, &MainWindow::onEmployeeOperationTimeout);
     openEmployeeDatabase();
     buildUi();
+    configureSortController();
     m_cloudUploader.Start(toUtf8Std(m_options.cloudUploadConfigPath));
     connect(m_clockTimer, &QTimer::timeout, this, &MainWindow::refreshClock);
     refreshClock();
@@ -1688,21 +1738,37 @@ QWidget *MainWindow::buildRightPanel()
     m_centerSpacingEdit = new QLineEdit(motorCard);
     m_centerSpacingEdit->setValidator(new QIntValidator(1, 999, m_centerSpacingEdit));
     m_centerSpacingEdit->setText(QString::number(m_centerSpacingMm.load()));
-    m_centerSpacingEdit->setPlaceholderText(QStringLiteral("请输入料槽中心间距"));
+    m_centerSpacingEdit->setPlaceholderText(QStringLiteral("请输入芯片中心间距"));
     connect(m_centerSpacingEdit, &QLineEdit::editingFinished, this, [this]() {
         bool ok = false;
         const int spacing = m_centerSpacingEdit->text().trimmed().toInt(&ok);
         if (ok && spacing > 0) {
             m_centerSpacingMm.store(spacing);
+            configureSortController();
         } else {
             m_centerSpacingEdit->setText(QString::number(m_centerSpacingMm.load()));
+        }
+    });
+    m_sortAreaDistanceEdit = new QLineEdit(motorCard);
+    m_sortAreaDistanceEdit->setValidator(new QIntValidator(1, 999, m_sortAreaDistanceEdit));
+    m_sortAreaDistanceEdit->setText(QString::number(m_sortAreaDistanceMm.load()));
+    m_sortAreaDistanceEdit->setPlaceholderText(QStringLiteral("第一块到分拣区距离"));
+    connect(m_sortAreaDistanceEdit, &QLineEdit::editingFinished, this, [this]() {
+        bool ok = false;
+        const int distance = m_sortAreaDistanceEdit->text().trimmed().toInt(&ok);
+        if (ok && distance > 0) {
+            m_sortAreaDistanceMm.store(distance);
+            configureSortController();
+        } else {
+            m_sortAreaDistanceEdit->setText(QString::number(m_sortAreaDistanceMm.load()));
         }
     });
     QPushButton *motorForward = createCommandButton(QStringLiteral("前进一个间距"), QStringLiteral("primary"));
     QPushButton *motorBack = createCommandButton(QStringLiteral("按累计距离回退"), QStringLiteral("warn"));
     connect(motorForward, &QPushButton::clicked, this, &MainWindow::requestMotorForward);
     connect(motorBack, &QPushButton::clicked, this, &MainWindow::requestMotorBack);
-    motorLayout->addWidget(createFieldRow(QStringLiteral("中心间距(mm)"), m_centerSpacingEdit));
+    motorLayout->addWidget(createFieldRow(QStringLiteral("芯片中心间距(mm)"), m_centerSpacingEdit));
+    motorLayout->addWidget(createFieldRow(QStringLiteral("首片到分拣区(mm)"), m_sortAreaDistanceEdit));
     motorLayout->addWidget(motorForward);
     motorLayout->addWidget(motorBack);
 
@@ -1936,9 +2002,16 @@ void MainWindow::confirmInspectionTemplate()
     m_completedForwardMoves.store(0);
     m_pendingMotorCommand.store(0);
     m_pendingMotorCommandMs.store(0);
+    m_pendingMotorRemainingDistanceMm.store(0);
     m_pendingMotorTriggersInspection.store(false);
     m_pendingBackCompletesRound.store(false);
+    m_pendingSortMotionKind.store(kSortMotionNone);
+    m_pendingMotorCountAsForwardMove.store(true);
     m_roundCompletionAnnounced.store(false);
+    configureSortController();
+    if (m_sortController) {
+        m_sortController->reset();
+    }
 
     updateKpi(0, 0, 0, 0.0);
     for (int i = 0; i < m_slotWidgets.size(); ++i) {
@@ -1979,6 +2052,54 @@ void MainWindow::requestMotorBack()
 void MainWindow::requestMotorAutoRun()
 {
     sendMotorCommand(kMotorAutoRunCommand, QStringLiteral("执行自动运行"));
+}
+
+void MainWindow::configureSortController()
+{
+    if (!m_sortController) {
+        ServoConfig servoConfig;
+        std::unique_ptr<ServoDriver> servo = CreateContinuousServoDriver(servoConfig);
+        m_sortController.reset(new SortCycleController(std::move(servo)));
+
+        SortCycleCallbacks callbacks;
+        callbacks.move_forward_mm = [this](int distanceMm, const std::string &label) {
+            return sendMotorDistanceCommand(kMotorMoveDistanceCommand,
+                                            distanceMm,
+                                            QString::fromUtf8(label.c_str()),
+                                            false,
+                                            false,
+                                            kSortMotionForward,
+                                            false);
+        };
+        callbacks.move_backward_mm = [this](int distanceMm, const std::string &label) {
+            return sendMotorDistanceCommand(kMotorBackDistanceCommand,
+                                            distanceMm,
+                                            QString::fromUtf8(label.c_str()),
+                                            false,
+                                            true,
+                                            kSortMotionBackward,
+                                            false);
+        };
+        callbacks.status = [this](const std::string &message) {
+            const QString text = QString::fromUtf8(message.c_str());
+            QMetaObject::invokeMethod(this, [this, text]() {
+                setSerialStatus(true, QStringLiteral("分拣：%1").arg(text));
+            }, Qt::QueuedConnection);
+        };
+        callbacks.completed = [this]() {
+            QMetaObject::invokeMethod(this, [this]() {
+                appendAlarmLog(QStringLiteral("分拣完成"), QStringLiteral("四块芯片分拣完成，料盘已回初始位置"));
+            }, Qt::QueuedConnection);
+        };
+        m_sortController->setCallbacks(callbacks);
+        m_sortController->init();
+    }
+
+    SortCycleConfig config;
+    config.chip_count = std::max(1, m_options.chipSlots);
+    config.chip_spacing_mm = std::max(1, m_centerSpacingMm.load());
+    config.first_chip_to_sort_area_mm = std::max(1, m_sortAreaDistanceMm.load());
+    m_sortController->configure(config);
 }
 
 void MainWindow::startOcrThread()
@@ -2025,6 +2146,7 @@ void MainWindow::startSerialThread()
 
     m_pendingMotorCommand.store(0);
     m_pendingMotorCommandMs.store(0);
+    m_pendingMotorRemainingDistanceMm.store(0);
     if (!m_motorSerial.Open(motorConfig)) {
         m_motorSerialOnline.store(false);
         setSerialStatus(false, QStringLiteral("电机串口打开失败：%1").arg(m_options.motorSerialPort));
@@ -2056,8 +2178,11 @@ void MainWindow::stopSerialThread()
     m_motorSerialOnline.store(false);
     m_pendingMotorCommand.store(0);
     m_pendingMotorCommandMs.store(0);
+    m_pendingMotorRemainingDistanceMm.store(0);
     m_pendingMotorTriggersInspection.store(false);
     m_pendingBackCompletesRound.store(false);
+    m_pendingSortMotionKind.store(kSortMotionNone);
+    m_pendingMotorCountAsForwardMove.store(true);
 }
 
 void MainWindow::serialLoop()
@@ -2108,10 +2233,16 @@ void MainWindow::motorSerialLoop()
         QVector<uint8_t> motorResponses;
         const QByteArray textBytes = extractEmployeeFrames(rawPending, employeeFrames, motorResponses);
         for (uint8_t response : motorResponses) {
+            if (continuePendingMotorDistanceCommand(response)) {
+                continue;
+            }
             const int pendingCommand = m_pendingMotorCommand.exchange(0);
             const bool triggerInspection = m_pendingMotorTriggersInspection.exchange(false);
             const bool completesRound = m_pendingBackCompletesRound.exchange(false);
+            const int sortMotionKind = m_pendingSortMotionKind.exchange(kSortMotionNone);
+            const bool countAsForwardMove = m_pendingMotorCountAsForwardMove.exchange(true);
             m_pendingMotorCommandMs.store(0);
+            m_pendingMotorRemainingDistanceMm.store(0);
             if (response == kMotorMoveDoneCommand) {
                 if (pendingCommand == kMotorAutoRunCommand) {
                     QMetaObject::invokeMethod(this, [this]() {
@@ -2121,7 +2252,9 @@ void MainWindow::motorSerialLoop()
                     int completedMoves = m_completedForwardMoves.load();
                     if (pendingCommand == kMotorMoveCommand ||
                         pendingCommand == kMotorMoveDistanceCommand) {
-                        completedMoves = m_completedForwardMoves.fetch_add(1) + 1;
+                        if (countAsForwardMove) {
+                            completedMoves = m_completedForwardMoves.fetch_add(1) + 1;
+                        }
                     }
                     if (triggerInspection) {
                         m_arrivalRequests.fetch_add(1);
@@ -2141,19 +2274,33 @@ void MainWindow::motorSerialLoop()
                         }
                     }, Qt::QueuedConnection);
                 }
+                if (sortMotionKind == kSortMotionForward) {
+                    QMetaObject::invokeMethod(this, [this, sortMotionKind]() {
+                        notifySortMotionDone(sortMotionKind);
+                    }, Qt::QueuedConnection);
+                }
             } else if (response == kMotorBackCommand) {
-                QMetaObject::invokeMethod(this, [this, completesRound]() {
+                QMetaObject::invokeMethod(this, [this, completesRound, sortMotionKind]() {
                     m_arrivalRequests.store(0);
                     m_completedForwardMoves.store(0);
                     setSerialStatus(true, QStringLiteral("回退动作完成：AA 55 22 FF，累计次数已清零"));
                     if (completesRound && !m_roundCompletionAnnounced.exchange(true)) {
                         AudioAlert::PlayRecognitionCompleteAsync();
                     }
+                    if (sortMotionKind == kSortMotionBackward) {
+                        notifySortMotionDone(sortMotionKind);
+                    }
                 }, Qt::QueuedConnection);
             } else if (response == kMotorInterruptedResponse) {
                 QMetaObject::invokeMethod(this, [this, pendingCommand]() {
                     m_pendingMotorTriggersInspection.store(false);
                     m_pendingBackCompletesRound.store(false);
+                    m_pendingMotorRemainingDistanceMm.store(0);
+                    m_pendingSortMotionKind.store(kSortMotionNone);
+                    m_pendingMotorCountAsForwardMove.store(true);
+                    if (m_sortController) {
+                        m_sortController->onTrayMotionInterrupted();
+                    }
                     setSerialStatus(true, QStringLiteral("下位机动作被按键中断：AA 55 23 FF"));
                     appendAlarmLog(QStringLiteral("下位机中断"),
                                    QStringLiteral("命令 0x%1 被 KEY_2/KEY_3 中断")
@@ -2166,12 +2313,20 @@ void MainWindow::motorSerialLoop()
         pending += chunk;
         size_t textMatchCount = 0;
         if (serialArrivalMatched(pending, m_options.arrivalCommand, textMatchCount)) {
+            if (continuePendingMotorDistanceCommand(kMotorMoveDoneCommand)) {
+                continue;
+            }
             const int pendingCommand = m_pendingMotorCommand.exchange(0);
             const bool triggerInspection = m_pendingMotorTriggersInspection.exchange(false);
+            const int sortMotionKind = m_pendingSortMotionKind.exchange(kSortMotionNone);
+            const bool countAsForwardMove = m_pendingMotorCountAsForwardMove.exchange(true);
             m_pendingMotorCommandMs.store(0);
+            m_pendingMotorRemainingDistanceMm.store(0);
             if (pendingCommand == kMotorMoveCommand ||
                 pendingCommand == kMotorMoveDistanceCommand) {
-                m_completedForwardMoves.fetch_add(static_cast<int>(textMatchCount));
+                if (countAsForwardMove) {
+                    m_completedForwardMoves.fetch_add(static_cast<int>(textMatchCount));
+                }
             }
             if (triggerInspection) {
                 m_arrivalRequests.fetch_add(textMatchCount);
@@ -2193,6 +2348,11 @@ void MainWindow::motorSerialLoop()
                         : QStringLiteral("系统运行状态：手动前进完成"));
                 }
             }, Qt::QueuedConnection);
+            if (sortMotionKind == kSortMotionForward) {
+                QMetaObject::invokeMethod(this, [this, sortMotionKind]() {
+                    notifySortMotionDone(sortMotionKind);
+                }, Qt::QueuedConnection);
+            }
         }
         if (pending.size() > 1024) {
             pending.remove(0, pending.size() - 1024);
@@ -2211,11 +2371,28 @@ bool MainWindow::consumeArrivalRequest()
     return false;
 }
 
-bool MainWindow::sendMotorCommand(uint8_t command,
-                                  const QString &label,
-                                  bool triggerInspectionOnDone,
-                                  bool completesRoundOnBackDone)
+bool MainWindow::sendMotorDistanceCommand(uint8_t command,
+                                          int distanceMm,
+                                          const QString &label,
+                                          bool triggerInspectionOnDone,
+                                          bool completesRoundOnBackDone,
+                                          int sortMotionKind,
+                                          bool countAsForwardMove)
 {
+    if (command != kMotorMoveDistanceCommand && command != kMotorBackDistanceCommand) {
+        return sendMotorCommand(command, label, triggerInspectionOnDone, completesRoundOnBackDone);
+    }
+    if (distanceMm <= 0) {
+        setSerialStatus(false, QStringLiteral("%1距离无效：%2mm").arg(label).arg(distanceMm));
+        return false;
+    }
+    if (distanceMm % kMotorHardwareStepMm != 0) {
+        setSerialStatus(false, QStringLiteral("%1距离必须是%2mm的整数倍：%3mm")
+                              .arg(label)
+                              .arg(kMotorHardwareStepMm)
+                              .arg(distanceMm));
+        return false;
+    }
     if (!m_motorSerialOnline.load() || !m_motorSerial.IsOpen()) {
         setSerialStatus(false, QStringLiteral("电机串口未连接，无法发送%1命令：%2")
                               .arg(label, m_options.motorSerialPort));
@@ -2232,6 +2409,139 @@ bool MainWindow::sendMotorCommand(uint8_t command,
         }
         m_pendingMotorCommand.store(0);
         m_pendingMotorCommandMs.store(0);
+        m_pendingMotorRemainingDistanceMm.store(0);
+        m_pendingMotorTriggersInspection.store(false);
+        m_pendingBackCompletesRound.store(false);
+        m_pendingSortMotionKind.store(kSortMotionNone);
+        m_pendingMotorCountAsForwardMove.store(true);
+        setSerialStatus(true, QStringLiteral("下位机回包超时，重新发送%1命令").arg(label));
+        expected = 0;
+        if (!m_pendingMotorCommand.compare_exchange_strong(expected, command)) {
+            setSerialStatus(true, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
+            return false;
+        }
+    }
+
+    m_pendingMotorCommandMs.store(QDateTime::currentMSecsSinceEpoch());
+    m_pendingMotorTriggersInspection.store(triggerInspectionOnDone);
+    m_pendingBackCompletesRound.store(completesRoundOnBackDone);
+    m_pendingSortMotionKind.store(sortMotionKind);
+    m_pendingMotorCountAsForwardMove.store(countAsForwardMove);
+    m_pendingMotorRemainingDistanceMm.store(distanceMm - kMotorHardwareStepMm);
+
+    if (!sendMotorDistanceChunk(command, kMotorHardwareStepMm)) {
+        m_pendingMotorCommand.store(0);
+        m_pendingMotorCommandMs.store(0);
+        m_pendingMotorRemainingDistanceMm.store(0);
+        m_pendingMotorTriggersInspection.store(false);
+        m_pendingBackCompletesRound.store(false);
+        m_pendingSortMotionKind.store(kSortMotionNone);
+        m_pendingMotorCountAsForwardMove.store(true);
+        setSerialStatus(false, QStringLiteral("%1命令发送失败").arg(label));
+        return false;
+    }
+
+    const QString action = command == kMotorMoveDistanceCommand
+        ? QStringLiteral("前进")
+        : QStringLiteral("回退");
+    setSerialStatus(true, QStringLiteral("已发送%1命令：%2总距离%3mm，按%4mm分%5次执行")
+                          .arg(label, action)
+                          .arg(distanceMm)
+                          .arg(kMotorHardwareStepMm)
+                          .arg(distanceMm / kMotorHardwareStepMm));
+    return true;
+}
+
+bool MainWindow::sendMotorDistanceChunk(uint8_t command, int distanceMm)
+{
+    QByteArray payload;
+    appendBe16(payload, static_cast<uint16_t>(distanceMm));
+    const QByteArray bytes = buildEmployeeFrame(command, payload);
+    const int sent = m_motorSerial.Send(reinterpret_cast<const uint8_t *>(bytes.constData()),
+                                       static_cast<size_t>(bytes.size()));
+    return sent == bytes.size();
+}
+
+bool MainWindow::continuePendingMotorDistanceCommand(uint8_t response)
+{
+    const int command = m_pendingMotorCommand.load();
+    const bool matchingResponse =
+        (command == kMotorMoveDistanceCommand && response == kMotorMoveDoneCommand) ||
+        (command == kMotorBackDistanceCommand && response == kMotorBackCommand);
+    const int remainingMm = m_pendingMotorRemainingDistanceMm.load();
+    if (!matchingResponse || remainingMm <= 0) {
+        return false;
+    }
+
+    const int chunkMm = std::min(kMotorHardwareStepMm, remainingMm);
+    if (!sendMotorDistanceChunk(static_cast<uint8_t>(command), chunkMm)) {
+        const int sortMotionKind = m_pendingSortMotionKind.exchange(kSortMotionNone);
+        m_pendingMotorCommand.store(0);
+        m_pendingMotorCommandMs.store(0);
+        m_pendingMotorRemainingDistanceMm.store(0);
+        m_pendingMotorTriggersInspection.store(false);
+        m_pendingBackCompletesRound.store(false);
+        m_pendingMotorCountAsForwardMove.store(true);
+        QMetaObject::invokeMethod(this, [this, sortMotionKind]() {
+            if (sortMotionKind != kSortMotionNone && m_sortController) {
+                m_sortController->onTrayMotionInterrupted();
+            }
+            setSerialStatus(false, QStringLiteral("分段运动续发失败，流程已停止"));
+        }, Qt::QueuedConnection);
+        return true;
+    }
+
+    const int nextRemainingMm = remainingMm - chunkMm;
+    m_pendingMotorRemainingDistanceMm.store(nextRemainingMm);
+    m_pendingMotorCommandMs.store(QDateTime::currentMSecsSinceEpoch());
+    setSerialStatus(true, QStringLiteral("分段运动完成，继续发送%1mm，剩余%2mm")
+                          .arg(chunkMm)
+                          .arg(nextRemainingMm));
+    return true;
+}
+
+bool MainWindow::sendMotorCommand(uint8_t command,
+                                  const QString &label,
+                                  bool triggerInspectionOnDone,
+                                  bool completesRoundOnBackDone)
+{
+    if (command == kMotorMoveDistanceCommand) {
+        return sendMotorDistanceCommand(command,
+                                        std::max(1, m_centerSpacingMm.load()),
+                                        label,
+                                        triggerInspectionOnDone,
+                                        completesRoundOnBackDone,
+                                        kSortMotionNone,
+                                        true);
+    }
+    if (command == kMotorBackDistanceCommand) {
+        const int distanceMm = std::max(0, m_completedForwardMoves.load()) *
+            std::max(1, m_centerSpacingMm.load());
+        return sendMotorDistanceCommand(command,
+                                        distanceMm,
+                                        label,
+                                        triggerInspectionOnDone,
+                                        completesRoundOnBackDone,
+                                        kSortMotionNone,
+                                        true);
+    }
+    if (!m_motorSerialOnline.load() || !m_motorSerial.IsOpen()) {
+        setSerialStatus(false, QStringLiteral("电机串口未连接，无法发送%1命令：%2")
+                              .arg(label, m_options.motorSerialPort));
+        return false;
+    }
+
+    int expected = 0;
+    if (!m_pendingMotorCommand.compare_exchange_strong(expected, command)) {
+        const qint64 pendingMs = m_pendingMotorCommandMs.load();
+        const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+        if (pendingMs <= 0 || nowMs - pendingMs < kMotorCommandTimeoutMs) {
+            setSerialStatus(true, QStringLiteral("上一条下位机命令未完成，暂不发送%1命令").arg(label));
+            return false;
+        }
+        m_pendingMotorCommand.store(0);
+        m_pendingMotorCommandMs.store(0);
+        m_pendingMotorRemainingDistanceMm.store(0);
         m_pendingMotorTriggersInspection.store(false);
         m_pendingBackCompletesRound.store(false);
         setSerialStatus(true, QStringLiteral("下位机回包超时，重新发送%1命令").arg(label));
@@ -2242,8 +2552,11 @@ bool MainWindow::sendMotorCommand(uint8_t command,
         }
     }
     m_pendingMotorCommandMs.store(QDateTime::currentMSecsSinceEpoch());
+    m_pendingMotorRemainingDistanceMm.store(0);
     m_pendingMotorTriggersInspection.store(triggerInspectionOnDone);
     m_pendingBackCompletesRound.store(completesRoundOnBackDone);
+    m_pendingSortMotionKind.store(kSortMotionNone);
+    m_pendingMotorCountAsForwardMove.store(true);
 
     QByteArray bytes;
     QString sentText;
@@ -2261,6 +2574,7 @@ bool MainWindow::sendMotorCommand(uint8_t command,
         if (distanceMm <= 0) {
             m_pendingMotorCommand.store(0);
             m_pendingMotorCommandMs.store(0);
+            m_pendingMotorRemainingDistanceMm.store(0);
             m_pendingMotorTriggersInspection.store(false);
             m_pendingBackCompletesRound.store(false);
             setSerialStatus(true, QStringLiteral("暂无累计前进距离，不发送回退命令"));
@@ -2287,6 +2601,7 @@ bool MainWindow::sendMotorCommand(uint8_t command,
     if (sent != bytes.size()) {
         m_pendingMotorCommand.store(0);
         m_pendingMotorCommandMs.store(0);
+        m_pendingMotorRemainingDistanceMm.store(0);
         m_pendingMotorTriggersInspection.store(false);
         m_pendingBackCompletesRound.store(false);
         setSerialStatus(false, QStringLiteral("%1命令发送失败").arg(label));
@@ -2320,6 +2635,18 @@ void MainWindow::sendMoveCommand()
                      false);
 }
 
+void MainWindow::notifySortMotionDone(int sortMotionKind)
+{
+    if (!m_sortController) {
+        return;
+    }
+    if (sortMotionKind == kSortMotionForward) {
+        m_sortController->onTrayMotionDone(TrayMotionKind::Forward);
+    } else if (sortMotionKind == kSortMotionBackward) {
+        m_sortController->onTrayMotionDone(TrayMotionKind::Backward);
+    }
+}
+
 void MainWindow::setSerialStatus(bool online, const QString &detail)
 {
     if (QThread::currentThread() != thread()) {
@@ -2342,8 +2669,14 @@ void MainWindow::setSerialStatus(bool online, const QString &detail)
 void MainWindow::ocrLoop()
 {
     HmiOcrDetector detector;
-    const bool initialized = detector.init("model/ocr/PP-OCRv5_mobile_det.rknn",
-                                           "model/ocr/PP-OCRv5_mobile_rec.rknn");
+    const std::string detModelPath = toUtf8Std(resolveRuntimeFile(
+        QStringLiteral("model/ocr/PP-OCRv5_mobile_det.rknn")));
+    const std::string recModelPath = toUtf8Std(resolveRuntimeFile(
+        QStringLiteral("model/ocr/PP-OCRv5_mobile_rec.rknn")));
+    std::fprintf(stdout, "[INFO] HMI OCR det_model=%s rec_model=%s\n",
+                 detModelPath.c_str(), recModelPath.c_str());
+    std::fflush(stdout);
+    const bool initialized = detector.init(detModelPath, recModelPath);
     QMetaObject::invokeMethod(this, [this, initialized]() {
         setStatusLabel(m_ocrModelLabel, QStringLiteral("字符识别模型"), initialized);
         if (!initialized && m_runningStatusLabel) {
@@ -2400,7 +2733,6 @@ void MainWindow::ocrLoop()
             }, Qt::QueuedConnection);
         }
 
-        sendMoveCommand();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
@@ -2484,6 +2816,23 @@ void MainWindow::handleOcrResult(const QString &rawText,
                      matched ? QStringLiteral("匹配") : QStringLiteral("不匹配"),
                      defectCategory,
                      finalGood ? QStringLiteral("--") : reasons.join(QStringLiteral("；")));
+
+    configureSortController();
+    if (m_sortController) {
+        ChipSortResult sortResult;
+        sortResult.slot_index = slotIndex;
+        sortResult.good = finalGood;
+        sortResult.chip_model = toUtf8Std(chipTemplate);
+        sortResult.ocr_text = toUtf8Std(normalizedText);
+        sortResult.defect_summary = toUtf8Std(defectCategory);
+        sortResult.reason = toUtf8Std(finalGood ? QStringLiteral("--") : reasons.join(QStringLiteral("；")));
+        m_sortController->recordInspectionResult(sortResult);
+    }
+
+    const int chipCount = std::max(1, std::max(m_options.chipSlots, m_slotWidgets.size()));
+    if (slotIndex < chipCount) {
+        sendMoveCommand();
+    }
 
     std::ostringstream ocrResult;
     ocrResult << "{"

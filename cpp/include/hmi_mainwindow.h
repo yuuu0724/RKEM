@@ -3,6 +3,7 @@
 
 #include "serial_port.h"
 #include "cloud_uploader.h"
+#include "sort_cycle_controller.h"
 
 #include <QImage>
 #include <QMainWindow>
@@ -16,6 +17,7 @@
 #include <chrono>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -340,7 +342,18 @@ private:
                           const QString &label,
                           bool triggerInspectionOnDone = false,
                           bool completesRoundOnBackDone = false);
+    bool sendMotorDistanceCommand(uint8_t command,
+                                  int distanceMm,
+                                  const QString &label,
+                                  bool triggerInspectionOnDone = false,
+                                  bool completesRoundOnBackDone = false,
+                                  int sortMotionKind = 0,
+                                  bool countAsForwardMove = true);
+    bool sendMotorDistanceChunk(uint8_t command, int distanceMm);
+    bool continuePendingMotorDistanceCommand(uint8_t response);
     void sendMoveCommand();
+    void configureSortController();
+    void notifySortMotionDone(int sortMotionKind);
     void setSerialStatus(bool online, const QString &detail);
     void handleOcrResult(const QString &rawText,
                          const QString &normalizedText,
@@ -384,6 +397,7 @@ private:
     CameraPreviewWidget *m_camera2Preview = nullptr;
     QLineEdit *m_templateEdit = nullptr;
     QLineEdit *m_centerSpacingEdit = nullptr;
+    QLineEdit *m_sortAreaDistanceEdit = nullptr;
     QComboBox *m_matchModeCombo = nullptr;
     QComboBox *m_defectTypeCombo = nullptr;
     QLineEdit *m_ocrThresholdEdit = nullptr;
@@ -402,14 +416,19 @@ private:
     std::atomic<uint64_t> m_arrivalRequests{0};
     std::atomic<int> m_pendingMotorCommand{0};
     std::atomic<qint64> m_pendingMotorCommandMs{0};
+    std::atomic<int> m_pendingMotorRemainingDistanceMm{0};
     std::atomic<bool> m_pendingMotorTriggersInspection{false};
     std::atomic<bool> m_pendingBackCompletesRound{false};
+    std::atomic<int> m_pendingSortMotionKind{0};
+    std::atomic<bool> m_pendingMotorCountAsForwardMove{true};
     std::atomic<bool> m_roundCompletionAnnounced{false};
     std::atomic<int> m_completedForwardMoves{0};
-    std::atomic<int> m_centerSpacingMm{10};
+    std::atomic<int> m_centerSpacingMm{20};
+    std::atomic<int> m_sortAreaDistanceMm{100};
     std::thread m_serialThread;
     std::thread m_motorSerialThread;
     CloudUploader m_cloudUploader;
+    std::unique_ptr<SortCycleController> m_sortController;
     std::mutex m_inspectionMutex;
     bool m_inspectionActive = false;
     QString m_currentTemplate;

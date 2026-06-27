@@ -97,6 +97,12 @@
 			null
 		],
 		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/chip_sort_result.h",
+			"MU",
+			"6YEA5652QU/moc_chip_sort_result.cpp",
+			null
+		],
+		[
 			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/hmi_mainwindow.h",
 			"MU",
 			"6YEA5652QU/moc_hmi_mainwindow.cpp",
@@ -106,6 +112,24 @@
 			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/hmi_ocr_detector.h",
 			"MU",
 			"6YEA5652QU/moc_hmi_ocr_detector.cpp",
+			null
+		],
+		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/pca9685_driver.h",
+			"MU",
+			"6YEA5652QU/moc_pca9685_driver.cpp",
+			null
+		],
+		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/servo_driver.h",
+			"MU",
+			"6YEA5652QU/moc_servo_driver.cpp",
+			null
+		],
+		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/sort_cycle_controller.h",
+			"MU",
+			"6YEA5652QU/moc_sort_cycle_controller.cpp",
 			null
 		],
 		[
@@ -231,7 +255,22 @@
 			null
 		],
 		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/pca9685_driver.cc",
+			"MU",
+			null
+		],
+		[
 			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc",
+			"MU",
+			null
+		],
+		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/servo_driver.cc",
+			"MU",
+			null
+		],
+		[
+			"/userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/sort_cycle_controller.cc",
 			"MU",
 			null
 		],

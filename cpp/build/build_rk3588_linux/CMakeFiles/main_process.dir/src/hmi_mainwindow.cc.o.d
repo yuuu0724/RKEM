@@ -185,6 +185,10 @@ CMakeFiles/main_process.dir/src/hmi_mainwindow.cc.o: \
  /usr/include/c++/11/bits/deque.tcc /usr/include/c++/11/bits/stl_queue.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/sort_cycle_controller.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/chip_sort_result.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/servo_driver.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/pca9685_driver.h \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/QImage \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/qimage.h \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/qtguiglobal.h \

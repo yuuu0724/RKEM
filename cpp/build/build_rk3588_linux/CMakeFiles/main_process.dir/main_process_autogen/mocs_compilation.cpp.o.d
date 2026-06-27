@@ -184,6 +184,10 @@ CMakeFiles/main_process.dir/main_process_autogen/mocs_compilation.cpp.o: \
  /usr/include/c++/11/bits/deque.tcc /usr/include/c++/11/bits/stl_queue.h \
  /usr/include/c++/11/thread /usr/include/c++/11/bits/std_thread.h \
  /usr/include/c++/11/bits/this_thread_sleep.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/6YEA5652QU/../../../../include/sort_cycle_controller.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/6YEA5652QU/../../../../include/chip_sort_result.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/6YEA5652QU/../../../../include/servo_driver.h \
+ /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/6YEA5652QU/../../../../include/pca9685_driver.h \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/QImage \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/qimage.h \
  /usr/include/aarch64-linux-gnu/qt5/QtGui/qtguiglobal.h \

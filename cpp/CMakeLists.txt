@@ -226,6 +226,9 @@ if (BUILD_QT_HMI)
             src/hmi_mainwindow.cc
             src/hmi_ocr_detector.cc
             src/yolo_detector.cc
+            src/pca9685_driver.cc
+            src/servo_driver.cc
+            src/sort_cycle_controller.cc
             src/logger.cc
             src/serial_port.cc
             ${AUDIO_ALERT_SRCS}
@@ -236,6 +239,10 @@ if (BUILD_QT_HMI)
             include/hmi_mainwindow.h
             include/hmi_ocr_detector.h
             include/yolo_detector.h
+            include/chip_sort_result.h
+            include/pca9685_driver.h
+            include/servo_driver.h
+            include/sort_cycle_controller.h
         )
 
         target_link_libraries(${TARGET_NAME}

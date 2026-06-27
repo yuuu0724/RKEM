@@ -1,8 +1,12 @@
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/6YEA5652QU/moc_hmi_mainwindow.cpp: /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/hmi_mainwindow.h \
   /userdata/sdcard/workspace/proj/integrated-inspection/cpp/build/build_rk3588_linux/main_process_autogen/moc_predefs.h \
+  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/chip_sort_result.h \
   /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/cloud_uploader.h \
   /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/common.h \
+  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/pca9685_driver.h \
   /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/serial_port.h \
+  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/servo_driver.h \
+  /userdata/sdcard/workspace/proj/integrated-inspection/cpp/include/sort_cycle_controller.h \
   /usr/include/aarch64-linux-gnu/asm/bitsperlong.h \
   /usr/include/aarch64-linux-gnu/asm/errno.h \
   /usr/include/aarch64-linux-gnu/asm/unistd.h \

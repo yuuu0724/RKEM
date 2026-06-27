@@ -966,6 +966,30 @@ src/ocr_engine.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_ocr.dir/build.make CMakeFiles/process_ocr.dir/src/ocr_engine.cc.s
 .PHONY : src/ocr_engine.cc.s
 
+src/pca9685_driver.o: src/pca9685_driver.cc.o
+.PHONY : src/pca9685_driver.o
+
+# target to build an object file
+src/pca9685_driver.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/pca9685_driver.cc.o
+.PHONY : src/pca9685_driver.cc.o
+
+src/pca9685_driver.i: src/pca9685_driver.cc.i
+.PHONY : src/pca9685_driver.i
+
+# target to preprocess a source file
+src/pca9685_driver.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/pca9685_driver.cc.i
+.PHONY : src/pca9685_driver.cc.i
+
+src/pca9685_driver.s: src/pca9685_driver.cc.s
+.PHONY : src/pca9685_driver.s
+
+# target to generate assembly for a file
+src/pca9685_driver.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/pca9685_driver.cc.s
+.PHONY : src/pca9685_driver.cc.s
+
 src/process_defect.o: src/process_defect.cc.o
 .PHONY : src/process_defect.o
 
@@ -1103,6 +1127,54 @@ src/serial_port.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/process_defect.dir/build.make CMakeFiles/process_defect.dir/src/serial_port.cc.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/serial_port.cc.s
 .PHONY : src/serial_port.cc.s
+
+src/servo_driver.o: src/servo_driver.cc.o
+.PHONY : src/servo_driver.o
+
+# target to build an object file
+src/servo_driver.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/servo_driver.cc.o
+.PHONY : src/servo_driver.cc.o
+
+src/servo_driver.i: src/servo_driver.cc.i
+.PHONY : src/servo_driver.i
+
+# target to preprocess a source file
+src/servo_driver.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/servo_driver.cc.i
+.PHONY : src/servo_driver.cc.i
+
+src/servo_driver.s: src/servo_driver.cc.s
+.PHONY : src/servo_driver.s
+
+# target to generate assembly for a file
+src/servo_driver.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/servo_driver.cc.s
+.PHONY : src/servo_driver.cc.s
+
+src/sort_cycle_controller.o: src/sort_cycle_controller.cc.o
+.PHONY : src/sort_cycle_controller.o
+
+# target to build an object file
+src/sort_cycle_controller.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/sort_cycle_controller.cc.o
+.PHONY : src/sort_cycle_controller.cc.o
+
+src/sort_cycle_controller.i: src/sort_cycle_controller.cc.i
+.PHONY : src/sort_cycle_controller.i
+
+# target to preprocess a source file
+src/sort_cycle_controller.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/sort_cycle_controller.cc.i
+.PHONY : src/sort_cycle_controller.cc.i
+
+src/sort_cycle_controller.s: src/sort_cycle_controller.cc.s
+.PHONY : src/sort_cycle_controller.s
+
+# target to generate assembly for a file
+src/sort_cycle_controller.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_process.dir/build.make CMakeFiles/main_process.dir/src/sort_cycle_controller.cc.s
+.PHONY : src/sort_cycle_controller.cc.s
 
 src/thread_pool.o: src/thread_pool.cc.o
 .PHONY : src/thread_pool.o
@@ -1381,6 +1453,9 @@ help:
 	@echo "... src/ocr_engine.o"
 	@echo "... src/ocr_engine.i"
 	@echo "... src/ocr_engine.s"
+	@echo "... src/pca9685_driver.o"
+	@echo "... src/pca9685_driver.i"
+	@echo "... src/pca9685_driver.s"
 	@echo "... src/process_defect.o"
 	@echo "... src/process_defect.i"
 	@echo "... src/process_defect.s"
@@ -1396,6 +1471,12 @@ help:
 	@echo "... src/serial_port.o"
 	@echo "... src/serial_port.i"
 	@echo "... src/serial_port.s"
+	@echo "... src/servo_driver.o"
+	@echo "... src/servo_driver.i"
+	@echo "... src/servo_driver.s"
+	@echo "... src/sort_cycle_controller.o"
+	@echo "... src/sort_cycle_controller.i"
+	@echo "... src/sort_cycle_controller.s"
 	@echo "... src/thread_pool.o"
 	@echo "... src/thread_pool.i"
 	@echo "... src/thread_pool.s"
