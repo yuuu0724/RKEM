@@ -14,7 +14,6 @@ FRAME_TAIL = 0xFF
 MOVE_DISTANCE_COMMAND = 0x25
 MOVE_DONE_RESPONSE = bytes((0xAA, 0x55, 0x21, 0xFF))
 MOVE_INTERRUPTED_RESPONSE = bytes((0xAA, 0x55, 0x23, 0xFF))
-HARDWARE_STEP_MM = 20
 
 BAUD_RATES = {
     9600: termios.B9600,
@@ -42,12 +41,6 @@ def build_move_frame(distance_mm: int) -> bytes:
     body = bytes((MOVE_DISTANCE_COMMAND, 0x00, len(payload))) + payload
     crc = crc16_modbus(body)
     return FRAME_HEADER + body + crc.to_bytes(2, byteorder="big") + bytes((FRAME_TAIL,))
-
-
-def split_into_steps(distance_mm: int) -> list[int]:
-    if distance_mm <= 0 or distance_mm % HARDWARE_STEP_MM != 0:
-        raise ValueError(f"前进距离必须是 {HARDWARE_STEP_MM} mm 的正整数倍")
-    return [HARDWARE_STEP_MM] * (distance_mm // HARDWARE_STEP_MM)
 
 
 def configure_serial(fd: int, baudrate: int) -> None:
@@ -126,30 +119,26 @@ def main() -> int:
             return 2
 
     try:
-        steps = split_into_steps(distance_mm)
-        frame = build_move_frame(HARDWARE_STEP_MM)
+        frame = build_move_frame(distance_mm)
     except ValueError as error:
         print(f"错误：{error}", file=sys.stderr)
         return 2
 
     print(f"串口: {args.port} @ {args.baudrate} 8N1")
-    print(f"目标距离: {distance_mm} mm，共 {len(steps)} 次，每次 {HARDWARE_STEP_MM} mm")
-    print(f"单次发送帧: {frame.hex(' ').upper()}")
+    print(f"目标距离: {distance_mm} mm")
+    print(f"发送帧: {frame.hex(' ').upper()}")
     if args.dry_run:
         return 0
 
     fd = -1
+    result = "timeout"
     try:
         fd = os.open(args.port, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
         configure_serial(fd, args.baudrate)
-        for index, step_mm in enumerate(steps, start=1):
-            termios.tcflush(fd, termios.TCIFLUSH)
-            print(f"第 {index}/{len(steps)} 次：发送前进 {step_mm} mm")
-            write_all(fd, frame)
-            result = wait_for_response(fd, args.timeout)
-            if result != "done":
-                break
-            print(f"第 {index}/{len(steps)} 次运动完成")
+        termios.tcflush(fd, termios.TCIFLUSH)
+        print(f"发送前进 {distance_mm} mm")
+        write_all(fd, frame)
+        result = wait_for_response(fd, args.timeout)
     except (OSError, TimeoutError, ValueError) as error:
         print(f"串口操作失败：{error}", file=sys.stderr)
         print("请确认串口存在、当前用户有权限，且 main_process 未占用该串口。", file=sys.stderr)

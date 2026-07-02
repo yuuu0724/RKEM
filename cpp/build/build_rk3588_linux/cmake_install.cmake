@@ -230,6 +230,9 @@ endif()
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/MP3" TYPE FILE FILES
     "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/fatigue.mp3"
+    "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/lrcg.mp3"
+    "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/qdcg.mp3"
+    "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/qtcg.mp3"
     "/userdata/sdcard/workspace/proj/integrated-inspection/cpp/../MP3/recognize.mp3"
     )
 endif()

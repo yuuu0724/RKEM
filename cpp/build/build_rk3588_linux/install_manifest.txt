@@ -17,5 +17,8 @@
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/defect/dataset.txt
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/model/defect/defect_best_i8.rknn
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/MP3/fatigue.mp3
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/MP3/lrcg.mp3
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/MP3/qdcg.mp3
+/userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/MP3/qtcg.mp3
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/MP3/recognize.mp3
 /userdata/sdcard/workspace/proj/integrated-inspection/cpp/install/rk3588_linux/config/cloud_upload.ini

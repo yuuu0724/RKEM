@@ -138,5 +138,5 @@ bool Pca9685Driver::readReg(uint8_t reg, uint8_t& value)
 
 int Pca9685Driver::usToTicks(int pulse_us) const
 {
-    return pulse_us * 4096 * freq_hz_ / 1000000;
+    return (pulse_us * 4096 * freq_hz_ + 500000) / 1000000;
 }

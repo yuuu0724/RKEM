@@ -5,6 +5,9 @@ namespace AudioAlert {
 
 void PlayFatigueWarningAsync();
 void PlayRecognitionCompleteAsync();
+void PlayEnrollSuccessAsync();
+void PlayCheckinSuccessAsync();
+void PlayCheckoutSuccessAsync();
 
 } // namespace AudioAlert
 

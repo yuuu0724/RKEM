@@ -349,8 +349,7 @@ private:
                                   bool completesRoundOnBackDone = false,
                                   int sortMotionKind = 0,
                                   bool countAsForwardMove = true);
-    bool sendMotorDistanceChunk(uint8_t command, int distanceMm);
-    bool continuePendingMotorDistanceCommand(uint8_t response);
+    bool sendMotorDistanceFrame(uint8_t command, int distanceMm);
     void sendMoveCommand();
     void configureSortController();
     void notifySortMotionDone(int sortMotionKind);
@@ -416,7 +415,6 @@ private:
     std::atomic<uint64_t> m_arrivalRequests{0};
     std::atomic<int> m_pendingMotorCommand{0};
     std::atomic<qint64> m_pendingMotorCommandMs{0};
-    std::atomic<int> m_pendingMotorRemainingDistanceMm{0};
     std::atomic<bool> m_pendingMotorTriggersInspection{false};
     std::atomic<bool> m_pendingBackCompletesRound{false};
     std::atomic<int> m_pendingSortMotionKind{0};

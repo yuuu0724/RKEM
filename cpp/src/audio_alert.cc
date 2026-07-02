@@ -15,6 +15,9 @@ namespace {
 
 constexpr const char *kFatigueMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/fatigue.mp3";
 constexpr const char *kRecognitionMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/recognize.mp3";
+constexpr const char *kEnrollSuccessMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/lrcg.mp3";
+constexpr const char *kCheckinSuccessMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/qdcg.mp3";
+constexpr const char *kCheckoutSuccessMp3Path = "/home/elf/workspace/proj/integrated-inspection/MP3/qtcg.mp3";
 constexpr const char *kDefaultAlsaDevice = "plughw:1,0";
 
 bool fileExists(const std::string &path)
@@ -22,15 +25,17 @@ bool fileExists(const std::string &path)
     return !path.empty() && access(path.c_str(), R_OK) == 0;
 }
 
-std::string resolveFatigueMp3Path()
+std::string resolveMp3Path(const char *envName,
+                           const char *defaultPath,
+                           const char *fileName)
 {
-    const char *envPath = std::getenv("FATIGUE_ALERT_MP3");
+    const char *envPath = std::getenv(envName);
     const std::vector<std::string> candidates = {
         envPath ? std::string(envPath) : std::string(),
-        kFatigueMp3Path,
-        "/userdata/sdcard/workspace/proj/integrated-inspection/MP3/fatigue.mp3",
-        "MP3/fatigue.mp3",
-        "../MP3/fatigue.mp3",
+        defaultPath,
+        std::string("/userdata/sdcard/workspace/proj/integrated-inspection/MP3/") + fileName,
+        std::string("MP3/") + fileName,
+        std::string("../MP3/") + fileName,
     };
 
     for (const std::string &path : candidates) {
@@ -38,26 +43,32 @@ std::string resolveFatigueMp3Path()
             return path;
         }
     }
-    return kFatigueMp3Path;
+    return defaultPath;
+}
+
+std::string resolveFatigueMp3Path()
+{
+    return resolveMp3Path("FATIGUE_ALERT_MP3", kFatigueMp3Path, "fatigue.mp3");
 }
 
 std::string resolveRecognitionMp3Path()
 {
-    const char *envPath = std::getenv("RECOGNITION_ALERT_MP3");
-    const std::vector<std::string> candidates = {
-        envPath ? std::string(envPath) : std::string(),
-        kRecognitionMp3Path,
-        "/userdata/sdcard/workspace/proj/integrated-inspection/MP3/recognize.mp3",
-        "MP3/recognize.mp3",
-        "../MP3/recognize.mp3",
-    };
+    return resolveMp3Path("RECOGNITION_ALERT_MP3", kRecognitionMp3Path, "recognize.mp3");
+}
 
-    for (const std::string &path : candidates) {
-        if (fileExists(path)) {
-            return path;
-        }
-    }
-    return kRecognitionMp3Path;
+std::string resolveCheckinSuccessMp3Path()
+{
+    return resolveMp3Path("CHECKIN_SUCCESS_MP3", kCheckinSuccessMp3Path, "qdcg.mp3");
+}
+
+std::string resolveEnrollSuccessMp3Path()
+{
+    return resolveMp3Path("ENROLL_SUCCESS_MP3", kEnrollSuccessMp3Path, "lrcg.mp3");
+}
+
+std::string resolveCheckoutSuccessMp3Path()
+{
+    return resolveMp3Path("CHECKOUT_SUCCESS_MP3", kCheckoutSuccessMp3Path, "qtcg.mp3");
 }
 
 int runPlayer(const std::vector<std::string> &args)
@@ -90,6 +101,7 @@ int runPlayer(const std::vector<std::string> &args)
 
 bool playOnce(const std::string &path)
 {
+    static std::atomic<unsigned long long> tempFileSequence{0};
     const char *alsaEnv = std::getenv("FATIGUE_ALERT_ALSA_DEVICE");
     const std::string alsaDevice = alsaEnv && alsaEnv[0] != '\0'
         ? std::string(alsaEnv)
@@ -97,18 +109,19 @@ bool playOnce(const std::string &path)
     const char *volumeEnv = std::getenv("FATIGUE_ALERT_VOLUME_DB");
     const std::string volumeFilter = std::string("volume=") +
         (volumeEnv && volumeEnv[0] != '\0' ? std::string(volumeEnv) : std::string("18")) + "dB";
-    const std::string wavPath = "/tmp/integrated_inspection_fatigue_alert_" +
-        std::to_string(static_cast<long long>(getpid())) + ".wav";
+    const std::string wavPath = "/tmp/integrated_inspection_audio_alert_" +
+        std::to_string(static_cast<long long>(getpid())) + "_" +
+        std::to_string(tempFileSequence.fetch_add(1)) + ".wav";
 
     if (runPlayer({"ffmpeg", "-y", "-loglevel", "quiet", "-i", path,
                    "-af", volumeFilter, "-ar", "48000", "-ac", "1",
                    "-sample_fmt", "s16", "-map_metadata", "-1", "-bitexact",
                    "-f", "wav", wavPath}) == 0) {
-        const bool ok = runPlayer({"speaker-test", "-D", alsaDevice, "-c", "2",
-                                   "-t", "wav", "-w", wavPath, "-l", "1"}) == 0;
+        bool ok = runPlayer({"speaker-test", "-D", alsaDevice, "-c", "2", "-s", "1",
+                             "-t", "wav", "-w", wavPath, "-l", "1"}) == 0;
         if (!ok) {
-            runPlayer({"aplay", "-D", alsaDevice, "--buffer-size=131072",
-                       "--period-size=32768", wavPath});
+            ok = runPlayer({"aplay", "-D", alsaDevice, "--buffer-size=131072",
+                            "--period-size=32768", wavPath}) == 0;
         }
         unlink(wavPath.c_str());
         if (ok) {
@@ -182,6 +195,51 @@ void PlayRecognitionCompleteAsync()
             std::fprintf(stderr, "[WARN] failed to play recognition audio: %s\n", path.c_str());
         }
         g_recognitionAlertPlaying.store(false);
+    }).detach();
+}
+
+void PlayCheckinSuccessAsync()
+{
+    const std::string path = resolveCheckinSuccessMp3Path();
+    std::thread([path]() {
+        if (!fileExists(path)) {
+            std::fprintf(stderr, "[WARN] checkin success audio file not found: %s\n", path.c_str());
+            return;
+        }
+
+        if (!playOnce(path)) {
+            std::fprintf(stderr, "[WARN] failed to play checkin success audio: %s\n", path.c_str());
+        }
+    }).detach();
+}
+
+void PlayEnrollSuccessAsync()
+{
+    const std::string path = resolveEnrollSuccessMp3Path();
+    std::thread([path]() {
+        if (!fileExists(path)) {
+            std::fprintf(stderr, "[WARN] enroll success audio file not found: %s\n", path.c_str());
+            return;
+        }
+
+        if (!playOnce(path)) {
+            std::fprintf(stderr, "[WARN] failed to play enroll success audio: %s\n", path.c_str());
+        }
+    }).detach();
+}
+
+void PlayCheckoutSuccessAsync()
+{
+    const std::string path = resolveCheckoutSuccessMp3Path();
+    std::thread([path]() {
+        if (!fileExists(path)) {
+            std::fprintf(stderr, "[WARN] checkout success audio file not found: %s\n", path.c_str());
+            return;
+        }
+
+        if (!playOnce(path)) {
+            std::fprintf(stderr, "[WARN] failed to play checkout success audio: %s\n", path.c_str());
+        }
     }).detach();
 }
 

@@ -219,14 +219,14 @@ void SortCycleController::continueAfterSortLocked()
 
 int SortCycleController::bridgeDistanceMmLocked() const
 {
-    const int detect_forward_mm = (config_.chip_count - 1) * config_.chip_spacing_mm;
-    return config_.first_chip_to_sort_area_mm - detect_forward_mm;
+    return config_.first_chip_to_sort_area_mm;
 }
 
 int SortCycleController::totalReturnDistanceMmLocked() const
 {
+    const int detect_forward_mm = (config_.chip_count - 1) * config_.chip_spacing_mm;
     const int sort_forward_mm = (config_.chip_count - 1) * config_.chip_spacing_mm;
-    return config_.first_chip_to_sort_area_mm + sort_forward_mm;
+    return detect_forward_mm + config_.first_chip_to_sort_area_mm + sort_forward_mm;
 }
 
 void SortCycleController::joinWorkerIfFinishedLocked()
