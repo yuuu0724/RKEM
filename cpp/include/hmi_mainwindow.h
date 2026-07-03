@@ -160,11 +160,6 @@ private:
         float score = 0.0f;
     };
 
-    struct FatigueSample {
-        std::chrono::steady_clock::time_point time;
-        bool closed = false;
-    };
-
     enum class FatigueLevel {
         Awake,
         Fatigue,
@@ -204,7 +199,6 @@ private:
     std::mutex m_fatigueMutex;
     FatigueLevel m_fatigueLevel = FatigueLevel::Awake;
     int m_fatigueScore = 0;
-    std::deque<FatigueSample> m_fatigueSamples;
     std::deque<std::chrono::steady_clock::time_point> m_closedEyeEvents;
     std::deque<std::chrono::steady_clock::time_point> m_yawnEvents;
     std::function<void(const QString&, int)> m_fatigueAlarmCallback;

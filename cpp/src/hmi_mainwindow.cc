@@ -72,6 +72,10 @@ constexpr int kDetectionInputSize = 640;
 constexpr float kYoloThreshold = 0.15f;
 constexpr double kCenterVisionMin = 0.2;
 constexpr double kCenterVisionMax = 0.8;
+constexpr int kFatigueEventThreshold = 3;
+constexpr auto kFatigueEventWindow = std::chrono::seconds(30);
+constexpr auto kClosedEyeEventCooldown = std::chrono::seconds(1);
+constexpr auto kYawnEventCooldown = std::chrono::seconds(3);
 constexpr const char *kChipCameraDevice = "/dev/video21";
 constexpr const char *kFatigueCameraDevice = "/dev/video23";
 constexpr uint8_t kEmployeeFrameHeader1 = 0xAA;
@@ -1235,7 +1239,6 @@ void CameraPreviewWidget::setFatigueDecision(FatigueLevel level,
 void CameraPreviewWidget::resetFatigueWarning()
 {
     writeHmiAlarmLog(QStringLiteral("疲劳报警解除"), QStringLiteral("清醒"));
-    m_fatigueSamples.clear();
     m_closedEyeEvents.clear();
     m_yawnEvents.clear();
     m_currentClosed = false;
@@ -1256,12 +1259,6 @@ void CameraPreviewWidget::updateFatigueDecision(const QVector<DetectionOverlay> 
     const bool closedNow = hasDetectionLabel(overlays, QStringLiteral("close_eye"));
     const bool mouthOpenNow = hasDetectionLabel(overlays, QStringLiteral("open_mouth"));
 
-    m_fatigueSamples.push_back({now, closedNow});
-    while (!m_fatigueSamples.empty() &&
-           now - m_fatigueSamples.front().time > std::chrono::seconds(60)) {
-        m_fatigueSamples.pop_front();
-    }
-
     if (closedNow && !m_currentClosed) {
         m_currentClosed = true;
         m_currentClosedEventCounted = false;
@@ -1272,7 +1269,10 @@ void CameraPreviewWidget::updateFatigueDecision(const QVector<DetectionOverlay> 
     }
     if (m_currentClosed && !m_currentClosedEventCounted &&
         now - m_closedStart >= std::chrono::milliseconds(400)) {
-        m_closedEyeEvents.push_back(now);
+        if (m_closedEyeEvents.empty() ||
+            now - m_closedEyeEvents.back() >= kClosedEyeEventCooldown) {
+            m_closedEyeEvents.push_back(now);
+        }
         m_currentClosedEventCounted = true;
     }
 
@@ -1286,35 +1286,25 @@ void CameraPreviewWidget::updateFatigueDecision(const QVector<DetectionOverlay> 
     }
     if (m_currentMouthOpen && !m_currentMouthOpenCounted &&
         now - m_mouthOpenStart >= std::chrono::seconds(1)) {
-        m_yawnEvents.push_back(now);
+        if (m_yawnEvents.empty() || now - m_yawnEvents.back() >= kYawnEventCooldown) {
+            m_yawnEvents.push_back(now);
+        }
         m_currentMouthOpenCounted = true;
     }
 
-    const auto fiveMinutes = std::chrono::minutes(5);
-    while (!m_closedEyeEvents.empty() && now - m_closedEyeEvents.front() > fiveMinutes) {
+    while (!m_closedEyeEvents.empty() &&
+           now - m_closedEyeEvents.front() > kFatigueEventWindow) {
         m_closedEyeEvents.pop_front();
     }
-    while (!m_yawnEvents.empty() && now - m_yawnEvents.front() > fiveMinutes) {
+    while (!m_yawnEvents.empty() && now - m_yawnEvents.front() > kFatigueEventWindow) {
         m_yawnEvents.pop_front();
     }
 
-    int closedFrameCount = 0;
-    for (const FatigueSample &sample : m_fatigueSamples) {
-        if (sample.closed) {
-            ++closedFrameCount;
-        }
-    }
-    const double perclos = m_fatigueSamples.empty()
-        ? 0.0
-        : static_cast<double>(closedFrameCount) / static_cast<double>(m_fatigueSamples.size());
-
-    int fatigueScore = static_cast<int>(m_closedEyeEvents.size() + m_yawnEvents.size());
-    if (m_yawnEvents.size() >= 2) {
-        ++fatigueScore;
-    }
-    const bool perclosFatigue = perclos >= 0.30;
-    const bool scoreFatigue = fatigueScore >= 2;
-    const bool fatigueNow = perclosFatigue || scoreFatigue;
+    const int closedEyeCount = static_cast<int>(m_closedEyeEvents.size());
+    const int yawnCount = static_cast<int>(m_yawnEvents.size());
+    const int fatigueScore = std::max(closedEyeCount, yawnCount);
+    const bool fatigueNow = closedEyeCount >= kFatigueEventThreshold ||
+        yawnCount >= kFatigueEventThreshold;
 
     if (fatigueNow && !m_currentFatigue) {
         m_currentFatigue = true;
