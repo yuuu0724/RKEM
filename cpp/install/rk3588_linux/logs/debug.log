@@ -504,3 +504,17 @@
 [2026-07-03 21:00:24] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS9 16 bytes: AA 55 11 00 08 00 00 08 AE 6A 47 B2 2C 38 01 FF
 [2026-07-03 21:00:39] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS9 12/12 bytes: AA 55 20 00 04 00 00 08 AE 7E 4D FF
 [2026-07-03 21:00:40] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS9 24 bytes: AA 55 21 00 10 00 00 08 AE 6A 47 B2 2C 6A 47 B2 3C 00 00 00 10 44 46 FF
+[2026-07-03 22:18:32] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:62 - Serial port /dev/ttyS9 opened successfully, baud=115200 data=8 stop=1 parity=N
+[2026-07-03 22:18:32] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:62 - Serial port /dev/ttyS8 opened successfully, baud=115200 data=8 stop=1 parity=N
+[2026-07-03 22:19:10] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS8 10/10 bytes: AA 55 25 00 02 00 14 08 C8 FF
+[2026-07-03 22:19:13] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS8 4 bytes: AA 55 21 FF
+[2026-07-03 22:19:13] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS8 10/10 bytes: AA 55 25 00 02 00 14 08 C8 FF
+[2026-07-03 22:19:17] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS8 4 bytes: AA 55 21 FF
+[2026-07-03 22:19:17] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS8 10/10 bytes: AA 55 25 00 02 00 14 08 C8 FF
+[2026-07-03 22:19:20] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS8 4 bytes: AA 55 21 FF
+[2026-07-03 22:19:20] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS8 10/10 bytes: AA 55 25 00 02 00 64 EC C9 FF
+[2026-07-03 22:19:36] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS8 4 bytes: AA 55 21 FF
+[2026-07-03 22:19:38] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:96 - Serial TX /dev/ttyS8 10/10 bytes: AA 55 25 00 02 00 14 08 C8 FF
+[2026-07-03 22:19:41] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:150 - Serial RX /dev/ttyS8 4 bytes: AA 55 21 FF
+[2026-07-03 22:19:42] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:75 - Serial port /dev/ttyS9 closed
+[2026-07-03 22:19:42] [INFO] /userdata/sdcard/workspace/proj/integrated-inspection/cpp/src/serial_port.cc:75 - Serial port /dev/ttyS8 closed
